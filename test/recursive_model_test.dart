@@ -1,14 +1,14 @@
 part of model_map_test;
 
 
-class InnerModel extends ModelMap
+class InnerModel
 {
 	String string;
 	int integer;
 }
 
 
-class OuterModel extends ModelMap
+class OuterModel
 {
 	InnerModel inner;
 }
@@ -20,7 +20,8 @@ void recursiveModelTest()
 
 	group('Recursive model:', () {
 		test('Assign model from map', () {
-			var model = new OuterModel().fromMap(map);
+		  var modelMap = new ModelMap();
+			var model = modelMap.fromMap(OuterModel, map);
 
 			expect(model.inner, isNotNull);
 			expect(model.inner.string, equals('some text'));
@@ -28,12 +29,13 @@ void recursiveModelTest()
 		});
 
 		test('Extract model to map', () {
+		  var modelMap = new ModelMap();
 			var model = new OuterModel()
 				..inner			= new InnerModel()
 				..inner.string	= 'some text'
 				..inner.integer	= 42;
 
-			expect(model.toMap(), equals(map));
+			expect(modelMap.toMap(model), equals(map));
 		});
 	});
 }

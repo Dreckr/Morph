@@ -1,7 +1,7 @@
 part of model_map_test;
 
 
-class ComplexModel extends ModelMap
+class ComplexModel
 {
 	int integer;
 	List<SimpleModel> modelList;
@@ -27,7 +27,8 @@ void complexModelTest()
 
 	group('Complex model:', () {
 		test('Assign model from map', () {
-			var model = new ComplexModel().fromMap(map);
+		  var modelMap = new ModelMap();
+			var model = modelMap.fromMap(ComplexModel, map);
 
 			expect(model.integer, equals(42));
 			expect(model.modelList.length, equals(2));
@@ -39,6 +40,7 @@ void complexModelTest()
 		});
 
 		test('Extract model to map', () {
+		  var modelMap = new ModelMap();
 			var model = new ComplexModel()
 				..integer		= 42
 				..dateMap		= { 'Today': now, 'Tomorrow': now.add(new Duration(days: 1)) }
@@ -52,7 +54,7 @@ void complexModelTest()
 					new SimpleModel()..string = 'second model'..float = 1.23
 				]};
 
-			expect(model.toMap(), equals(map));
+			expect(modelMap.toMap(model), equals(map));
 		});
 	});
 }

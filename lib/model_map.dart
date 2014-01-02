@@ -1,194 +1,158 @@
-// Copyright (c) 2013, Dan Parnham. All rights reserved. Use of this source code
-// is governed by a BSD-style licence that can be found in the LICENSE file.
-
 library model_map;
 
-import 'dart:convert';
 import 'dart:mirrors';
 
+class ModelMap {
+  
+  // TODO(diego): Support custom property name
+  // TODO(diego): Support ignore
+  dynamic fromMap(Type type, Map<String, dynamic> map, [dynamic instance]) {
+    if (instance == null) {
+      instance = _createInstanceOf(type);
+    }
+    
+    var im = reflect(instance);
+    var members = im.type.declarations.values;
 
-/// ModelMap is an experiment with mirrors.
-///
-/// Since mirrors are not fully implemented at this time and do not yet
-/// fully compile to javascript then this will be of limited use.
-///
-/// Be warned: the core mirror implementation is still in development
-/// and so changes to the API may break this library.
-abstract class ModelMap
-{
-	/// Populates this object from JSON
-	///
-	/// A convenience function that converts JSON to a Map using the built
-	/// in parse function and the map is handed to fromMap.
-	///
-	/// Returns itself
-	dynamic fromJson(String json)
-	{
-		return this.fromMap(JSON.decode(json));
-	}
+    members
+    .where(
+        (member) => 
+          member is VariableMirror && 
+          !member.isPrivate && 
+          !member.isStatic)
+       .forEach(
+        (member) {
+          var name = MirrorSystem.getName(member.simpleName);
+  
+          if (member.type is ClassMirror && map.containsKey(name)) {
+            im.setField(member.simpleName, _parseValue(member.type, map[name]));
+          }
+       });
+    
+    members
+    .where(
+        (member) => 
+          member is MethodMirror && 
+          member.isSetter &&
+          !member.isPrivate && 
+          !member.isStatic)
+       .forEach(
+        (member) {
+          var name = MirrorSystem.getName(member.simpleName);
+          name = name.substring(0, name.length - 1);
+          var type = member.parameters[0].type;
+  
+          if (type is ClassMirror && map.containsKey(name)) {
+            im.setField(MirrorSystem.getSymbol(name), _parseValue(type, map[name]));
+          }
+       });
 
+    return instance;
+  }
+  
+  Map<String, dynamic> toMap(object) {
+    var result  = new Map<String, dynamic>();
+    var im    = reflect(object);
+    var members = im.type.declarations.values;
 
-	/// Populates this object from a Map
-	///
-	/// A map is expected to contain string keys throughout that refer to
-	/// the names of fields. All fields are automatically populated where
-	/// the type is understood.
-	///
-	/// Returns itself
-	dynamic fromMap(Map<String, dynamic> map)
-	{
-		var im		= reflect(this);
-		var members	= im.type.declarations.values;
+    for (var m in members.where(
+         (m) => (m is VariableMirror || (m is MethodMirror && m.isGetter)) &&
+         !m.isPrivate && !m.isStatic)) {
+      var name  = MirrorSystem.getName(m.simpleName);
+      var value = _getValue(im.getField(m.simpleName).reflectee);
 
-		for (var m in members.where((m) => m is VariableMirror && !m.isPrivate && !m.isStatic))
-		{
-				var name = MirrorSystem.getName(m.simpleName);
+      if (value != null) result[name] = value;
+    }
 
-				if (m.type is ClassMirror && map.containsKey(name))
-				{
-					im.setField(m.simpleName, _parseValue(m.type, map[name]));
-				}
-		}
-
-		return this;
-	}
-
-	/// Parses a value based on the expected type
-	dynamic _parseValue(ClassMirror type, dynamic value)
-	{
-		switch(type.reflectedType)
-		{
-			case String:	return value is String ? value : null;
-			case int:		return value is num ? value.toInt() : 0;
-			case double:	return value is num ? value.toDouble() : 0;
-			case num:		return value is num ? value : 0;
-			case bool:		return value is bool ? value : false;
-			case DateTime:	return _parseDate(value);
-			default: 		return _parseComplex(type, value);
-		}
-	}
-
-
-	/// Generate a new Date from the supplied value. If the value is an integer then
-	/// it is assumed to be a UTC representation of millisends since the epoch.
-	/// If the value is a string it is parsed with the default parser (which will handle
-	/// ISO 8601 styles dates).
-	DateTime _parseDate(dynamic value)
-	{
-		if (value is String)  return DateTime.parse(value);
-		if (value is num)     return new DateTime.fromMillisecondsSinceEpoch(value, isUtc: true);
-		return null;
-	}
-
-
-	/// Parses a complex type such as a List or Map. Other
-	/// complex types must descend from ModelMap to be handled
-	/// correctly.
-	dynamic _parseComplex(ClassMirror type, dynamic value)
-	{
-		var result = type.newInstance(const Symbol(""), []).reflectee;
-
-		if (result is ModelMap && value is Map<String, dynamic>)
-		{
-			result.fromMap(value);
-		}
-		else if (result is List && value is List)
-		{
-			var valueType = type.typeArguments[0];
-
-			if (valueType is ClassMirror)
-			{
-				for (var i in value) result.add(_parseValue(valueType, i));
-			}
-		}
-		else if (result is Map && value is Map)
-		{
-			var keyType 	= type.typeArguments[0];
-			var valueType	= type.typeArguments[1];
-
-			if (keyType is ClassMirror && valueType is ClassMirror)
-			{
-				if ((keyType as ClassMirror).reflectedType == String)
-				{
-					value.forEach((k, v) => result[k] = _parseValue(valueType, v));
-				}
-			}
-		}
-
-		return result;
-	}
-
-
-
-	/// Serializes this object to JSON
-	///
-	/// A convenience function that converts a map generated by toMap
-	/// to JSON using the built in stringify function.
-	///
-	/// Returns a JSON string representing this object instance.
-	String toJson()
-	{
-		return JSON.encode(this.toMap());
-	}
+    return result;
+  }
+  
+  // TODO(diego): Implement custom instance providers
+  dynamic _createInstanceOf(Type type) {
+    var classMirror = reflectClass(type);
+    var constructors = classMirror.declarations.values.where(
+      (declaration) =>
+        (declaration is MethodMirror) && (declaration.isConstructor));
+    
+    var selectedConstructor = constructors.firstWhere(
+        (constructor) => constructor.parameters.where(
+            (parameter) => !parameter.isOptional).length == 0
+            , orElse: () =>  null);
+    
+    if (selectedConstructor == null) {
+      throw new ArgumentError("$type does not have a no-args constructor or "
+                               "an instance provider.");
+    }
+    
+    return classMirror
+              .newInstance(selectedConstructor.constructorName, []).reflectee;
+  }
+  
+  // TODO(diego): Implement custom serializers
+  dynamic _getValue(dynamic value) {
+    if (value is String || value is num || value is bool) {
+      return value;
+    } else if (value is DateTime) {
+      return value.toString().replaceFirst(' ', 'T');
+    } else if (value is List) {
+      return new List.from(value.map((i) => _getValue(i)));
+    } else if (value is Map) {
+      return new Map.fromIterables(value.keys, 
+                                    value.values.map((i) => _getValue(i)));
+    } else if (value != null) {
+      return toMap(value);
+    }
+    
+    return null;
+  }
+  
+  // TODO(diego): Implement custom deserializers
+  dynamic _parseValue(ClassMirror type, dynamic value) {
+    switch(type.reflectedType) {
+      case String:  return value is String ? value : null;
+      case int:   return value is num ? value.toInt() : 0;
+      case double:  return value is num ? value.toDouble() : 0;
+      case num:   return value is num ? value : 0;
+      case bool:    return value is bool ? value : false;
+      case DateTime:  return _parseDate(value);
+      default:    return _parseComplex(type, value);
+    }
+  }
 
 
-	/// Converts this object to a map
-	///
-	/// This object instance is traversed using reflection and the values,
-	/// where possible, are copied into a map structure in which the keys
-	/// are the field names and the values are JSON friendly. It will only
-	/// handle public, non-static fields. Complex fields that do not descend
-	/// from ModelMap (with the exception of lists, maps and dates), will be
-	/// skipped. Any maps must have string keys, since a final JSON output
-	/// will not support anything else.
-	///
-	/// Returns a map representing this object instance.
-	Map<String, dynamic> toMap()
-	{
-		var result	= new Map<String, dynamic>();
-		var im		= reflect(this);
-		//var members = im.type.members.values;
-		var members = im.type.declarations.values;
-
-		for (var m in members.where((m) => m is VariableMirror && !m.isPrivate && !m.isStatic))
-		{
-			var name	= MirrorSystem.getName(m.simpleName);
-			var value	= _getValue(im.getField(m.simpleName).reflectee);
-
-			if (value != null) result[name] = value;
-		}
-
-		return result;
-	}
+  DateTime _parseDate(dynamic value) {
+    if (value is String)  return DateTime.parse(value);
+    if (value is num)     return new DateTime.fromMillisecondsSinceEpoch(value, isUtc: true);
+    return null;
+  }
 
 
-	/// Where possible convert the given value to a suitable JSON friendly form
-	/// for storing in a map. This can include lists, maps and any objects that
-	/// descend from ModelMap. DateTime values are stored as a string in
-	/// ISO 8601 format.
-	dynamic _getValue(dynamic value)
-	{
-		if (value is String || value is num || value is bool)
-		{
-			return value;
-		}
-		else if (value is DateTime)
-		{
-			return value.toString().replaceFirst(' ', 'T');
-		}
-		else if (value is List)
-		{
-			return new List.from(value.map((i) => _getValue(i)));
-		}
-		else if (value is Map)
-		{
-			return new Map.fromIterables(value.keys, value.values.map((i) => _getValue(i)));
-		}
-		else if (value is ModelMap)
-		{
-			return value.toMap();
-		}
+  dynamic _parseComplex(ClassMirror classMirror, dynamic value) {
+    var result;
+    var type = classMirror.reflectedType;
+    
+    if (classMirror.simpleName == const Symbol("List") && value is List) {
+      result = new List();
+      var valueType = classMirror.typeArguments[0];
 
-		return null;
-	}
+      if (valueType is ClassMirror) {
+        for (var i in value) result.add(_parseValue(valueType, i));
+      }
+    } else if (classMirror.simpleName == const Symbol("Map") && 
+                value is Map) {
+      result = new Map();
+      var keyType   = classMirror.typeArguments[0];
+      var valueType = classMirror.typeArguments[1];
+
+      if (keyType is ClassMirror && valueType is ClassMirror) {
+        if ((keyType as ClassMirror).reflectedType == String) {
+          value.forEach((k, v) => result[k] = _parseValue(valueType, v));
+        }
+      }
+    } else if (value is Map) {
+      result = fromMap(classMirror.reflectedType, value);
+    }
+
+    return result;
+  }
 }

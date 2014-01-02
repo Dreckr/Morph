@@ -21,7 +21,8 @@ void simpleModelTest()
 
 	group('Simple model:', () {
 		test('Assign values from map', () {
-			var model = new SimpleModel().fromMap(map);
+		  var modelMap = new ModelMap();
+			var model = modelMap.fromMap(SimpleModel, map);
 
 			expect(model.string, equals('some text'));
 			expect(model.integer, equals(42));
@@ -31,6 +32,7 @@ void simpleModelTest()
 		});
 
 		test('Extract values to map', () {
+		  var modelMap = new ModelMap();
 			var model = new SimpleModel()
 				..string	= 'some text'
 				..integer	= 42
@@ -38,7 +40,7 @@ void simpleModelTest()
 				..float		= 1.23
 				..date		= now;
 
-			expect(model.toMap(), equals(map));
+			expect(modelMap.toMap(model), equals(map));
 		});
 	});
 }
