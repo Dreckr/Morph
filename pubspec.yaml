@@ -1,11 +1,11 @@
-name:  model_map
-version: 0.2.5
-description:  Mirror based model mapping
+name: model_map
 author: Dan Parnham <dan@teadriven.me.uk>
+version: 0.2.5
 homepage: http://github.com/parnham/model_map.dart
-
+description: Mirror based model mapping
 environment:
-  sdk: ">=0.8.10+6 <2.0.0"
-
+  sdk: '>=0.8.10+6 <2.0.0'
+dependencies:
+  quiver: any
 dev_dependencies:
   unittest: any
