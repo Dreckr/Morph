@@ -4,11 +4,16 @@ import 'dart:mirrors';
 import 'package:quiver/mirrors.dart';
 import 'adapters.dart';
 
+// TODO(diego): Improve error messages
+// TODO(diego): Make tests for Property and Ignore annotations
+// TODO(diego): Make tests for custom serializer/deserializer
+// TODO(diego): Make tests for circular reference check
 class ModelMap {
   Map<Type, Deserializer> _deserializers = {};
   Map<Type, Serializer> _serializers = {};
   Serializer _genericSerializer;
   Deserializer _genericDeserializer;
+  dynamic _workingObject;
   
   ModelMap() {
     _genericDeserializer = _genericSerializer = new GenericTypeAdapter();
@@ -33,59 +38,78 @@ class ModelMap {
     }
   }
   
-  dynamic fromMap(Type type, Map<String, dynamic> map) {
-    // TODO(diego): Check if type is a class
-    
-    return deserialize(reflectClass(type), map);
-  }
-
-  Map<String, dynamic> toMap(object) {
-    // TODO(diego): Check if object's type is a class
-    
-    return serialize(object);
-  }
+  Map<String, dynamic> toMap(dynamic object) => serialize(object);
   
-  // TODO(diego): Implement cyclical reference check
+  dynamic fromMap(Type targetType, Map<String, dynamic> map) =>
+      deserialize(targetType, map);
+  
   dynamic serialize(dynamic value) {
-    if (value is Iterable) {
-      return new List.from(value.map((i) => serialize(i)));
-    } else if (value is Map) {
-      return new Map.fromIterables(value.keys, 
-                                    value.values.map((i) => serialize(i)));
-    } else if (_serializers.containsKey(value.runtimeType)) {
-      return _serializers[value.runtimeType]
-                .serialize(value, reflectClass(value.runtimeType));
-    } else if (value != null) {
-      return _genericSerializer
-                .serialize(value, reflectClass(value.runtimeType));
+    if (_workingObject == null) {
+      _workingObject = value;
+    } else if (_workingObject == value) {
+      throw new ArgumentError("$value has a circular reference.");
     }
-    
-    return null;
-  }
-  
-  dynamic deserialize(ClassMirror type, dynamic value) {
-    if (classImplements(type, #dart.core.Iterable) || classImplements(type, #dart.core.Map)) {
-      return _deserializeComplex(type, value);
-    } else if (_deserializers.containsKey(type.reflectedType)) {
-      return _deserializers[type.reflectedType].deserialize(value, type);
-    } else if (value != null) {
-      return _genericDeserializer.deserialize(value, type);
-    }
-    
-    return null;
-  }
 
-  dynamic _deserializeComplex(ClassMirror classMirror, dynamic value) {
     var result;
     
-    if (classImplements(classMirror, #dart.core.Iterable) && value is Iterable) {
+    if (value is Iterable) {
+      result = new List.from(value.map((i) => serialize(i)));
+    } else if (value is Map) {
+      result = new Map.fromIterables(value.keys, 
+                                    value.values.map((i) => serialize(i)));
+    } else if (_serializers.containsKey(value.runtimeType)) {
+      result = _serializers[value.runtimeType]
+                .serialize(value, value.runtimeType);
+    } else if (value != null) {
+      result = _genericSerializer
+                .serialize(value, value.runtimeType);
+    }
+    
+    if (_workingObject == value) {
+      _workingObject = null;
+    };
+    
+    return result;
+  }
+  
+  dynamic deserialize(Type targetType, dynamic value) {
+    if (_workingObject == null) {
+      _workingObject = value;
+    } else if (_workingObject == value) {
+      throw new ArgumentError("$value has a circular reference.");
+    }
+    
+    var classMirror = reflectClass(targetType);
+    
+    if (classImplements(classMirror, getTypeName(Iterable)) || 
+        classImplements(classMirror, getTypeName(Map))) {
+      return _deserializeComplex(targetType, value);
+    } else if (_deserializers.containsKey(targetType)) {
+      return _deserializers[targetType].deserialize(value, targetType);
+    } else if (value != null) {
+      return _genericDeserializer.deserialize(value, targetType);
+    }
+    
+    if (_workingObject == value) {
+      _workingObject = null;
+    }
+    
+    return null;
+  }
+
+  dynamic _deserializeComplex(Type type, dynamic value) {
+    var result;
+    var classMirror = reflectType(type) as ClassMirror;
+    
+    if (classImplements(classMirror, getTypeName(Iterable)) && value is Iterable) {
       result = new List();
       var valueType = classMirror.typeArguments[0];
 
       if (valueType is ClassMirror) {
-        for (var i in value) result.add(deserialize(valueType, i));
+        for (var i in value) result.add(
+            deserialize(valueType.reflectedType, i));
       }
-    } else if (classImplements(classMirror, #dart.core.Map) && 
+    } else if (classImplements(classMirror, getTypeName(Map)) && 
                 value is Map) {
       result = new Map();
       var keyType   = classMirror.typeArguments[0];
@@ -93,7 +117,8 @@ class ModelMap {
 
       if (keyType is ClassMirror && valueType is ClassMirror) {
         if (keyType.reflectedType == String) {
-          value.forEach((k, v) => result[k] = deserialize(valueType, v));
+          value.forEach((k, v) => result[k] = 
+              deserialize(valueType.reflectedType, v));
         }
       }
     }
@@ -109,7 +134,7 @@ abstract class Serializer<T> {
     this.modelMap = modelMap;
   }
   
-  dynamic serialize(T object, ClassMirror objectType);
+  dynamic serialize(T object, Type objectType);
   
 }
 
@@ -120,7 +145,7 @@ abstract class Deserializer<T> {
     this.modelMap = modelMap;
   }
   
-  T deserialize(object, ClassMirror objectType);
+  T deserialize(object, Type objectType);
   
 }
 

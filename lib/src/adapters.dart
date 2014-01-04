@@ -1,32 +1,35 @@
 library model_map.adapters;
 
 import 'dart:mirrors';
+import 'annotations.dart';
 import 'core.dart';
 
 // TODO(diego): Implement custom instance providers
-// TODO(diego): Support custom property name
-// TODO(diego): Support ignore
 class GenericTypeAdapter extends TypeAdapter {
   
-  Map<String, dynamic> serialize(object, ClassMirror objectType) {
+  Map<String, dynamic> serialize(object, Type objectType) {
     var result  = new Map<String, dynamic>();
     var im = reflect(object);
     
     var members = im.type.declarations.values;
 
-    for (var m in members.where(
-         (m) => (m is VariableMirror || (m is MethodMirror && m.isGetter)) &&
-         !m.isPrivate && !m.isStatic)) {
-      var name  = MirrorSystem.getName(m.simpleName);
-      var value = modelMap.serialize(im.getField(m.simpleName).reflectee);
-
-      if (value != null) result[name] = value;
-    }
+    members
+      .where(
+         (member) => 
+             (member is VariableMirror || 
+                 (member is MethodMirror && member.isGetter)) &&
+            !member.isPrivate && !member.isStatic && !_shouldIgnore(member))
+      .forEach((member) {
+        var name  = _getPropertyName(member);
+        var value = modelMap.serialize(im.getField(member.simpleName).reflectee);
+  
+        if (value != null) result[name] = value;
+    });
 
     return result;
   }
   
-  dynamic deserialize(object, ClassMirror objectType) {
+  dynamic deserialize(object, Type objectType) {
     if (object is! Map) {
       throw new ArgumentError("$object cannot be deserialized into a ClassMirror");
     }
@@ -41,14 +44,15 @@ class GenericTypeAdapter extends TypeAdapter {
         (member) => 
           member is VariableMirror && 
           !member.isPrivate && 
-          !member.isStatic)
+          !member.isStatic &&
+          !_shouldIgnore(member))
        .forEach(
         (member) {
-          var name = MirrorSystem.getName(member.simpleName);
+          var name = _getPropertyName(member);
   
           if (member.type is ClassMirror && object.containsKey(name)) {
             im.setField(member.simpleName, 
-                        modelMap.deserialize(member.type, object[name]));
+                        modelMap.deserialize(member.type.reflectedType, object[name]));
           }
        });
     
@@ -58,23 +62,31 @@ class GenericTypeAdapter extends TypeAdapter {
           member is MethodMirror && 
           member.isSetter &&
           !member.isPrivate && 
-          !member.isStatic)
+          !member.isStatic &&
+          !_shouldIgnore(member))
        .forEach(
         (member) {
+          var propertyName = _getPropertyName(member);
+          
           var name = MirrorSystem.getName(member.simpleName);
           name = name.substring(0, name.length - 1);
+          
+          if (member.parameters.length == 0)
+            return;
+          
           var type = member.parameters[0].type;
-  
-          if (type is ClassMirror && object.containsKey(name)) {
+          
+          if (type is ClassMirror && object.containsKey(propertyName)) {
             im.setField(MirrorSystem.getSymbol(name), 
-                        modelMap.deserialize(type, object[name]));
+                        modelMap.deserialize(type, object[propertyName]));
           }
        });
 
     return instance;
   }
   
-  dynamic _createInstanceOf(ClassMirror classMirror) {
+  dynamic _createInstanceOf(Type type) {
+    var classMirror = reflectClass(type);
     var constructors = classMirror.declarations.values.where(
       (declaration) =>
         (declaration is MethodMirror) && (declaration.isConstructor));
@@ -85,22 +97,44 @@ class GenericTypeAdapter extends TypeAdapter {
             , orElse: () =>  null);
     
     if (selectedConstructor == null) {
-      throw new ArgumentError("${classMirror.reflectedType} does not have a no-args constructor or "
+      throw new ArgumentError("${classMirror.reflectedType} does not have a "
+                               "no-args constructor or "
                                "an instance provider.");
     }
     
     return classMirror
               .newInstance(selectedConstructor.constructorName, []).reflectee;
   }
+  
+  bool _shouldIgnore(DeclarationMirror member) =>
+    member.metadata.any((metadata) => metadata.reflectee == Ignore);
+  
+  String _getPropertyName(DeclarationMirror member) {
+    var propertyAnnotation = member.metadata.firstWhere(
+        (metadata) => metadata.reflectee is Property,
+        orElse: () => null);
+    
+    if (propertyAnnotation != null) {
+      return propertyAnnotation.reflectee.name;
+    } else {
+      var name = MirrorSystem.getName(member.simpleName);
+      
+      if (member is MethodMirror && member.isSetter) {
+        name = name.substring(0, name.length - 1);
+      }
+      
+      return name;
+    }
+  }
 }
 
 class StringTypeAdapter extends TypeAdapter<String> {
   
-  dynamic serialize(String object, ClassMirror objectType) {
+  dynamic serialize(String object, Type objectType) {
     return object;
   }
   
-  String deserialize(object, ClassMirror objectType) {
+  String deserialize(object, Type objectType) {
     return object.toString();
   }
   
@@ -108,11 +142,11 @@ class StringTypeAdapter extends TypeAdapter<String> {
 
 class NumTypeAdapter extends TypeAdapter<num> {
   
-  dynamic serialize(num object, ClassMirror objectType) {
+  dynamic serialize(num object, Type objectType) {
     return object;
   }
   
-  num deserialize(object, ClassMirror objectType) {
+  num deserialize(object, Type objectType) {
     if (object is String) {
       return num.parse(object, 
         (string) => 
@@ -128,11 +162,11 @@ class NumTypeAdapter extends TypeAdapter<num> {
 
 class IntTypeAdapter extends TypeAdapter<int> {
   
-  dynamic serialize(int object, ClassMirror objectType) {
+  dynamic serialize(int object, Type objectType) {
     return object;
   }
   
-  int deserialize(object, ClassMirror objectType) {
+  int deserialize(object, Type objectType) {
     if (object is String) {
       return int.parse(object, 
         onError: (string) => 
@@ -148,11 +182,11 @@ class IntTypeAdapter extends TypeAdapter<int> {
 
 class DoubleTypeAdapter extends TypeAdapter<double> {
   
-  dynamic serialize(double object, ClassMirror objectType) {
+  dynamic serialize(double object, Type objectType) {
     return object;
   }
   
-  double deserialize(object, ClassMirror objectType) {
+  double deserialize(object, Type objectType) {
     if (object is String) {
       return double.parse(object, 
         (string) => 
@@ -168,11 +202,11 @@ class DoubleTypeAdapter extends TypeAdapter<double> {
 
 class BoolTypeAdapter extends TypeAdapter<bool> {
   
-  dynamic serialize(bool object, ClassMirror objectType) {
+  dynamic serialize(bool object, Type objectType) {
     return object;
   }
   
-  bool deserialize(object, ClassMirror objectType) {
+  bool deserialize(object, Type objectType) {
     if (object is String) {
       if (object == "true") {
         return true;
@@ -192,11 +226,11 @@ class BoolTypeAdapter extends TypeAdapter<bool> {
 
 class DateTimeTypeAdapter extends TypeAdapter<DateTime> {
   
-  dynamic serialize(DateTime object, ClassMirror objectType) {
+  dynamic serialize(DateTime object, Type objectType) {
     return object.toString().replaceFirst(' ', 'T');
   }
   
-  DateTime deserialize(object, ClassMirror objectType) {
+  DateTime deserialize(object, Type objectType) {
     if (object is String) {
       return DateTime.parse(object);
     } else if (object is num) {
