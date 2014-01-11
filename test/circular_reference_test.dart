@@ -23,7 +23,7 @@ void circularReferenceTest() {
   three.one = one;
   
   group("Circular reference:", () {
-    test("Serialization throws error", () {
+    test("Serialization throws ArgumentError", () {
       
       var serialization = () {
         modelMap.toMap(one);

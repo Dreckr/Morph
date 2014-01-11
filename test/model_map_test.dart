@@ -13,6 +13,7 @@ part 'custom_serializer_deserializer_test.dart';
 part 'ignore_annotation_test.dart';
 part 'property_annotation_test.dart';
 part 'circular_reference_test.dart';
+part 'instance_provider_test.dart';
 
 void main() {
   useVMConfiguration();
@@ -32,4 +33,6 @@ void main() {
   propertyAnnotationTest();
   
   circularReferenceTest();
+  
+  instanceProviderTest();
 }

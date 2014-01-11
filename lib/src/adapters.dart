@@ -4,8 +4,8 @@ import 'dart:mirrors';
 import 'annotations.dart';
 import 'core.dart';
 
-// TODO(diego): Implement custom instance providers
 class GenericTypeAdapter extends TypeAdapter {
+  InstanceProvider _genericInstanceProvider = new _GenericInstanceProvider();
   
   Map<String, dynamic> serialize(object) {
     var result  = new Map<String, dynamic>();
@@ -45,6 +45,7 @@ class GenericTypeAdapter extends TypeAdapter {
           member is VariableMirror && 
           !member.isPrivate && 
           !member.isStatic &&
+          !member.isFinal &&
           !_shouldIgnore(member))
        .forEach(
         (member) {
@@ -87,24 +88,11 @@ class GenericTypeAdapter extends TypeAdapter {
   }
   
   dynamic _createInstanceOf(Type type) {
-    var classMirror = reflectClass(type);
-    var constructors = classMirror.declarations.values.where(
-      (declaration) =>
-        (declaration is MethodMirror) && (declaration.isConstructor));
-    
-    var selectedConstructor = constructors.firstWhere(
-        (constructor) => constructor.parameters.where(
-            (parameter) => !parameter.isOptional).length == 0
-            , orElse: () =>  null);
-    
-    if (selectedConstructor == null) {
-      throw new ArgumentError("${classMirror.reflectedType} does not have a "
-                               "no-args constructor or "
-                               "an instance provider.");
+    if (modelMap.instanceProviders.containsKey(type)) {
+      return modelMap.instanceProviders[type].createInstance(type);
+    } else {
+      return _genericInstanceProvider.createInstance(type);
     }
-    
-    return classMirror
-              .newInstance(selectedConstructor.constructorName, []).reflectee;
   }
   
   bool _shouldIgnore(DeclarationMirror member) =>
@@ -243,4 +231,28 @@ class DateTimeTypeAdapter extends TypeAdapter<DateTime> {
     }
   }
   
+}
+
+class _GenericInstanceProvider implements InstanceProvider {
+  
+  dynamic createInstance(Type instanceType) {
+    var classMirror = reflectClass(instanceType);
+    var constructors = classMirror.declarations.values.where(
+      (declaration) =>
+        (declaration is MethodMirror) && (declaration.isConstructor));
+    
+    var selectedConstructor = constructors.firstWhere(
+        (constructor) => constructor.parameters.where(
+            (parameter) => !parameter.isOptional).length == 0
+            , orElse: () =>  null);
+    
+    if (selectedConstructor == null) {
+      throw new ArgumentError("${classMirror.reflectedType} does not have a "
+                               "no-args constructor or "
+                               "an instance provider.");
+    }
+    
+    return classMirror
+              .newInstance(selectedConstructor.constructorName, []).reflectee;
+  }
 }

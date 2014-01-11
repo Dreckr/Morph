@@ -2,21 +2,23 @@ library model_map.core;
 
 import 'dart:mirrors';
 import 'package:quiver/mirrors.dart';
+import 'package:collection/collection.dart';
 import 'adapters.dart';
 
 // TODO(diego): Document
 // TODO(diego): Improve error messages
-// TODO(diego): Make tests for getter/setter
 class ModelMap {
   Map<Type, Deserializer> _deserializers = {};
   Map<Type, Serializer> _serializers = {};
-  Serializer _genericSerializer;
-  Deserializer _genericDeserializer;
+  TypeAdapter _genericTypeAdapter = new GenericTypeAdapter();
+  Map<Type, InstanceProvider> _instanceProviders = {};
   dynamic _workingObject;
   
+  Map<Type, InstanceProvider> get instanceProviders => 
+      new UnmodifiableMapView(_instanceProviders);
+  
   ModelMap() {
-    _genericDeserializer = _genericSerializer = new GenericTypeAdapter();
-    _genericDeserializer.install(this);
+    _genericTypeAdapter.install(this);
     setTypeAdapter(String, new StringTypeAdapter());
     setTypeAdapter(int, new IntTypeAdapter());
     setTypeAdapter(double, new DoubleTypeAdapter());
@@ -37,6 +39,11 @@ class ModelMap {
     }
   }
   
+  void setInstanceProvider(Type type, InstanceProvider instanceProvider) {
+    _instanceProviders[type] = instanceProvider;
+  }
+  
+  // TODO(diego): Ensure that this objects serializer returns a map
   Map<String, dynamic> toMap(dynamic object) => serialize(object);
   
   dynamic fromMap(Type targetType, Map<String, dynamic> map) =>
@@ -60,8 +67,7 @@ class ModelMap {
       result = _serializers[value.runtimeType]
                 .serialize(value);
     } else if (value != null) {
-      result = _genericSerializer
-                .serialize(value);
+      result = _genericTypeAdapter.serialize(value);
     }
     
     if (_workingObject == value) {
@@ -86,7 +92,7 @@ class ModelMap {
     } else if (_deserializers.containsKey(targetType)) {
       return _deserializers[targetType].deserialize(value, targetType);
     } else if (value != null) {
-      return _genericDeserializer.deserialize(value, targetType);
+      return _genericTypeAdapter.deserialize(value, targetType);
     }
     
     if (_workingObject == value) {
@@ -154,4 +160,10 @@ abstract class TypeAdapter<T> implements Serializer<T>, Deserializer<T> {
   void install(ModelMap modelMap) {
     this.modelMap = modelMap;
   }
+}
+
+abstract class InstanceProvider<T> {
+  
+  T createInstance(Type instanceType);
+  
 }
