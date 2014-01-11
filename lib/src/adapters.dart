@@ -7,7 +7,7 @@ import 'core.dart';
 // TODO(diego): Implement custom instance providers
 class GenericTypeAdapter extends TypeAdapter {
   
-  Map<String, dynamic> serialize(object, Type objectType) {
+  Map<String, dynamic> serialize(object) {
     var result  = new Map<String, dynamic>();
     var im = reflect(object);
     
@@ -78,7 +78,8 @@ class GenericTypeAdapter extends TypeAdapter {
           
           if (type is ClassMirror && object.containsKey(propertyName)) {
             im.setField(MirrorSystem.getSymbol(name), 
-                        modelMap.deserialize(type, object[propertyName]));
+                        modelMap.deserialize(type.reflectedType, 
+                                             object[propertyName]));
           }
        });
 
@@ -130,7 +131,7 @@ class GenericTypeAdapter extends TypeAdapter {
 
 class StringTypeAdapter extends TypeAdapter<String> {
   
-  dynamic serialize(String object, Type objectType) {
+  dynamic serialize(String object) {
     return object;
   }
   
@@ -142,7 +143,7 @@ class StringTypeAdapter extends TypeAdapter<String> {
 
 class NumTypeAdapter extends TypeAdapter<num> {
   
-  dynamic serialize(num object, Type objectType) {
+  dynamic serialize(num object) {
     return object;
   }
   
@@ -162,7 +163,7 @@ class NumTypeAdapter extends TypeAdapter<num> {
 
 class IntTypeAdapter extends TypeAdapter<int> {
   
-  dynamic serialize(int object, Type objectType) {
+  dynamic serialize(int object) {
     return object;
   }
   
@@ -182,7 +183,7 @@ class IntTypeAdapter extends TypeAdapter<int> {
 
 class DoubleTypeAdapter extends TypeAdapter<double> {
   
-  dynamic serialize(double object, Type objectType) {
+  dynamic serialize(double object) {
     return object;
   }
   
@@ -202,7 +203,7 @@ class DoubleTypeAdapter extends TypeAdapter<double> {
 
 class BoolTypeAdapter extends TypeAdapter<bool> {
   
-  dynamic serialize(bool object, Type objectType) {
+  dynamic serialize(bool object) {
     return object;
   }
   
@@ -226,7 +227,7 @@ class BoolTypeAdapter extends TypeAdapter<bool> {
 
 class DateTimeTypeAdapter extends TypeAdapter<DateTime> {
   
-  dynamic serialize(DateTime object, Type objectType) {
+  dynamic serialize(DateTime object) {
     return object.toString().replaceFirst(' ', 'T');
   }
   

@@ -2,21 +2,34 @@ library model_map_test;
 
 import 'dart:convert';
 import 'package:unittest/unittest.dart';
+import 'package:unittest/vm_config.dart';
 import 'package:model_map/model_map.dart';
 
 part 'simple_model_test.dart';
 part 'collections_model_test.dart';
 part 'recursive_model_test.dart';
 part 'complex_model_test.dart';
+part 'custom_serializer_deserializer_test.dart';
+part 'ignore_annotation_test.dart';
+part 'property_annotation_test.dart';
+part 'circular_reference_test.dart';
 
-
-void main()
-{
-	simpleModelTest();
-
-	collectionsModelTest();
-
-	recursiveModelTest();
-
-	complexModelTest();
+void main() {
+  useVMConfiguration();
+  
+  simpleModelTest();
+  
+  collectionsModelTest();
+  
+  recursiveModelTest();
+  
+  complexModelTest();
+  
+  customSerializerDeserializerTest();
+  
+  ignoreAnnotationTest();
+  
+  propertyAnnotationTest();
+  
+  circularReferenceTest();
 }

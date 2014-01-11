@@ -1,10 +1,12 @@
 name: model_map
-author: Dan Parnham <dan@teadriven.me.uk>
-version: 0.2.5
-homepage: http://github.com/parnham/model_map.dart
+version: 0.3.0
+authors:
+- Dan Parnham <dan@teadriven.me.uk>
+- Diego Rocha <diego.rocha.comp@gmail.com>
 description: Mirror based model mapping
+homepage: http://github.com/parnham/model_map.dart
 environment:
-  sdk: '>=0.8.10+6 <2.0.0'
+  sdk: '>=1.1.0-dev.4.0 <2.0.0'
 dependencies:
   quiver: any
 dev_dependencies:

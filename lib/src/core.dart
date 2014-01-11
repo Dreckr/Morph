@@ -4,10 +4,9 @@ import 'dart:mirrors';
 import 'package:quiver/mirrors.dart';
 import 'adapters.dart';
 
+// TODO(diego): Document
 // TODO(diego): Improve error messages
-// TODO(diego): Make tests for Property and Ignore annotations
-// TODO(diego): Make tests for custom serializer/deserializer
-// TODO(diego): Make tests for circular reference check
+// TODO(diego): Make tests for getter/setter
 class ModelMap {
   Map<Type, Deserializer> _deserializers = {};
   Map<Type, Serializer> _serializers = {};
@@ -59,10 +58,10 @@ class ModelMap {
                                     value.values.map((i) => serialize(i)));
     } else if (_serializers.containsKey(value.runtimeType)) {
       result = _serializers[value.runtimeType]
-                .serialize(value, value.runtimeType);
+                .serialize(value);
     } else if (value != null) {
       result = _genericSerializer
-                .serialize(value, value.runtimeType);
+                .serialize(value);
     }
     
     if (_workingObject == value) {
@@ -134,7 +133,7 @@ abstract class Serializer<T> {
     this.modelMap = modelMap;
   }
   
-  dynamic serialize(T object, Type objectType);
+  dynamic serialize(T object);
   
 }
 
@@ -145,7 +144,7 @@ abstract class Deserializer<T> {
     this.modelMap = modelMap;
   }
   
-  T deserialize(object, Type objectType);
+  T deserialize(object, Type targetType);
   
 }
 
