@@ -14,6 +14,7 @@ part 'ignore_annotation_test.dart';
 part 'property_annotation_test.dart';
 part 'circular_reference_test.dart';
 part 'instance_provider_test.dart';
+part 'encoder_decoder_test.dart';
 
 void main() {
   useVMConfiguration();
@@ -35,4 +36,6 @@ void main() {
   circularReferenceTest();
   
   instanceProviderTest();
+  
+  encoderDecoderTest();
 }

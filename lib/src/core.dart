@@ -1,5 +1,6 @@
 library model_map.core;
 
+import 'dart:convert';
 import 'dart:mirrors';
 import 'package:quiver/mirrors.dart';
 import 'package:collection/collection.dart';
@@ -68,11 +69,15 @@ class ModelMap {
    * all its elements are serialized. In case it is of any other type, either
    * a custom [Serializer] is used (if registered for such type) or a generic
    * serializer that uses reflection is used 
-   * (which should be fine for most uses).
+   * (which should be fine for most uses) and a map is returned.
+   * 
+   * Optionally, you can pass a encoder to transform the output. For example,
+   * if you want to serialize an object into a JSON string, you can call
+   * 'modelMap.serialize(object, JSON.encoder)'.
    * 
    * Note: The keys of a map are transformed to strings using toString().
    */
-  dynamic serialize(dynamic object) {
+  dynamic serialize(dynamic object, [Converter<Object, Object> encoder]) {
     if (_workingObject == null) {
       _workingObject = object;
     } else if (_workingObject == object) {
@@ -97,6 +102,10 @@ class ModelMap {
       _workingObject = null;
     };
     
+    if (encoder != null) {
+      result = encoder.convert(result);
+    }
+    
     return result;
   }
   
@@ -109,12 +118,21 @@ class ModelMap {
    * deserialize objects that do not have a custom deserializer, its class must
    * have a no-args constructor or an [InstanceProvider] for its type must be
    * registered.
+   * 
+   * Optionally, you can pass a decoder to transform the input. For example,
+   * if your input [value] is a JSON string, you can call 
+   * 'modelMap.deserialize(SomeType, input, JSON.decoder)'.
    */
-  dynamic deserialize(Type targetType, dynamic value) {
+  dynamic deserialize(Type targetType, dynamic value, 
+                      [Converter<Object, Object> decoder]) {
     if (_workingObject == null) {
       _workingObject = value;
     } else if (_workingObject == value) {
       throw new ArgumentError("$value has a circular reference.");
+    }
+    
+    if (decoder != null) {
+      value = decoder.convert(value);
     }
     
     var classMirror = reflectClass(targetType);
