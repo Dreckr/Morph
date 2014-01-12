@@ -33,7 +33,7 @@ void ignoreAnnotationTest() {
   
   group("Ignore annotation:", () {
     test("Serialization",() {
-      var serializedModel = modelMap.toMap(model);
+      var serializedModel = modelMap.serialize(model);
       
       expect(serializedModel, new isInstanceOf<Map>());
       expect(serializedModel["someString"], equals(model.someString));
@@ -43,7 +43,7 @@ void ignoreAnnotationTest() {
     });
     
     test("Deserialization", () {
-      var deserializedModel = modelMap.fromMap(IgnoreModel, map);
+      var deserializedModel = modelMap.deserialize(IgnoreModel, map);
       
       expect(deserializedModel, new isInstanceOf<IgnoreModel>());
       expect(deserializedModel.someString, equals("someString"));

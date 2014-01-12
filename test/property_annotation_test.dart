@@ -19,13 +19,13 @@ void propertyAnnotationTest() {
   
   group("Property annotation:", () {
     test("Serialization", () {
-      var serializedModel = modelMap.toMap(model);
+      var serializedModel = modelMap.serialize(model);
       
       expect(serializedModel, equals(map));
     });
     
     test("Deserialization", () {
-      var deserializedModel = modelMap.fromMap(PropertyModel, map);
+      var deserializedModel = modelMap.deserialize(PropertyModel, map);
       
       expect(deserializedModel, new isInstanceOf<PropertyModel>());
       expect(deserializedModel.someString, equals("someString"));

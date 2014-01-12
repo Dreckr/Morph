@@ -43,16 +43,16 @@ void customSerializerDeserializerTest() {
   var model = new CustomModel("part1", "part2");
   
   var modelMap = new ModelMap();
-  modelMap.setTypeAdapter(CustomModel, new CustomModelSerializer());
-  modelMap.setTypeAdapter(CustomModel, new CustomModelDeserializer());
+  modelMap.registerTypeAdapter(CustomModel, new CustomModelSerializer());
+  modelMap.registerTypeAdapter(CustomModel, new CustomModelDeserializer());
   
   group("Custom serializer/deserializer:", () {
     test("Serialization", () {
-      expect(modelMap.toMap(model), equals(map));
+      expect(modelMap.serialize(model), equals(map));
     });
     
     test("Deserialization", () {
-      var deserializedModel = modelMap.fromMap(CustomModel, map);
+      var deserializedModel = modelMap.deserialize(CustomModel, map);
       expect(deserializedModel.partA, equals(model.partA));
       expect(deserializedModel.partB, equals(model.partB));
     });

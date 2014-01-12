@@ -20,7 +20,7 @@ void simpleModelTest() {
   group('Simple model:', () {
     test('Assign values from map', () {
       var modelMap = new ModelMap();
-      var model = modelMap.fromMap(SimpleModel, map);
+      var model = modelMap.deserialize(SimpleModel, map);
 
       expect(model.string, equals('some text'));
       expect(model.integer, equals(42));
@@ -38,7 +38,7 @@ void simpleModelTest() {
         ..float    = 1.23
         ..date    = now;
 
-      expect(modelMap.toMap(model), equals(map));
+      expect(modelMap.serialize(model), equals(map));
     });
   });
 }

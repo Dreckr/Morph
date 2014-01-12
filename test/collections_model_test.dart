@@ -16,7 +16,7 @@ void collectionsModelTest()
   group('Collections model:', () {
     test('Assign collections from map', () {
       var modelMap = new ModelMap();
-      var model = modelMap.fromMap(CollectionsModel, map);
+      var model = modelMap.deserialize(CollectionsModel, map);
 
       expect(model.map, equals(map['map']));
       expect(model.list, equals(map['list']));
@@ -28,7 +28,7 @@ void collectionsModelTest()
        ..map  = { 'first': 42, 'second': 123 }
        ..list  = [ 'list', 'of', 'strings' ];
 
-      expect(modelMap.toMap(model), equals(map));
+      expect(modelMap.serialize(model), equals(map));
     });
   });
 }

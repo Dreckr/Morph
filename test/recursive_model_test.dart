@@ -19,7 +19,7 @@ void recursiveModelTest()
   group('Recursive model:', () {
     test('Assign model from map', () {
       var modelMap = new ModelMap();
-      var model = modelMap.fromMap(OuterModel, map);
+      var model = modelMap.deserialize(OuterModel, map);
 
       expect(model.inner, isNotNull);
       expect(model.inner.string, equals('some text'));
@@ -33,7 +33,7 @@ void recursiveModelTest()
         ..inner.string  = 'some text'
         ..inner.integer  = 42;
 
-      expect(modelMap.toMap(model), equals(map));
+      expect(modelMap.serialize(model), equals(map));
     });
   });
 }

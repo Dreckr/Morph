@@ -28,17 +28,20 @@ void instanceProviderTest() {
       modelMap = new ModelMap();
     });
     
-    test("Deserialization without custom instance provider throws ArgumentError", () {
+    test(
+        "Deserialization without custom instance provider throws ArgumentError",
+        () {
       var deserialization = () {
-        Provided model = modelMap.fromMap(Provided, {});
+        Provided model = modelMap.deserialize(Provided, {});
       };
       
       expect(deserialization, throwsArgumentError);
     });
     
     test("Deserialization using custom instance provider", () {
-      modelMap.setInstanceProvider(Provided, new ProvidedInstanceProvider());
-      Provided model = modelMap.fromMap(Provided, {});
+      modelMap.registerInstanceProvider(Provided, 
+                                        new ProvidedInstanceProvider());
+      Provided model = modelMap.deserialize(Provided, {});
       
       expect(model.finalString, equals("someString"));
     });

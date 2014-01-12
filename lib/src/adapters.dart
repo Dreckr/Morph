@@ -21,7 +21,8 @@ class GenericTypeAdapter extends TypeAdapter {
             !member.isPrivate && !member.isStatic && !_shouldIgnore(member))
       .forEach((member) {
         var name  = _getPropertyName(member);
-        var value = modelMap.serialize(im.getField(member.simpleName).reflectee);
+        var value = 
+                  modelMap.serialize(im.getField(member.simpleName).reflectee);
   
         if (value != null) result[name] = value;
     });
@@ -31,7 +32,8 @@ class GenericTypeAdapter extends TypeAdapter {
   
   dynamic deserialize(object, Type objectType) {
     if (object is! Map) {
-      throw new ArgumentError("$object cannot be deserialized into a ClassMirror");
+      throw 
+        new ArgumentError("$object cannot be deserialized into a ClassMirror");
     }
     
     var instance = _createInstanceOf(objectType);
@@ -53,7 +55,8 @@ class GenericTypeAdapter extends TypeAdapter {
   
           if (member.type is ClassMirror && object.containsKey(name)) {
             im.setField(member.simpleName, 
-                        modelMap.deserialize(member.type.reflectedType, object[name]));
+                        modelMap.deserialize(member.type.reflectedType,
+                                             object[name]));
           }
        });
     
@@ -139,7 +142,8 @@ class NumTypeAdapter extends TypeAdapter<num> {
     if (object is String) {
       return num.parse(object, 
         (string) => 
-          throw new ArgumentError("$object cannot be deserialized into a num"));
+          throw 
+              new ArgumentError("$object cannot be deserialized into a num"));
     } else if (object is num) {
       return object;
     } else {
@@ -159,7 +163,8 @@ class IntTypeAdapter extends TypeAdapter<int> {
     if (object is String) {
       return int.parse(object, 
         onError: (string) => 
-          throw new ArgumentError("$object cannot be deserialized into a int"));
+          throw 
+              new ArgumentError("$object cannot be deserialized into a int"));
     } else if (object is int) {
       return object;
     } else {
@@ -179,7 +184,8 @@ class DoubleTypeAdapter extends TypeAdapter<double> {
     if (object is String) {
       return double.parse(object, 
         (string) => 
-          throw new ArgumentError("$object cannot be deserialized into a double"));
+          throw 
+            new ArgumentError("$object cannot be deserialized into a double"));
     } else if (object is num) {
       return object.toDouble();
     } else {
@@ -227,7 +233,8 @@ class DateTimeTypeAdapter extends TypeAdapter<DateTime> {
     } else if (object is DateTime) {
       return object;
     } else {
-      throw new ArgumentError("$object cannot be deserialized into a DateTime");
+      throw 
+        new ArgumentError("$object cannot be deserialized into a DateTime");
     }
   }
   

@@ -26,7 +26,7 @@ void circularReferenceTest() {
     test("Serialization throws ArgumentError", () {
       
       var serialization = () {
-        modelMap.toMap(one);
+        modelMap.serialize(one);
       };
       
       expect(serialization, throwsArgumentError);

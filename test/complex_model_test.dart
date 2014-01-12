@@ -29,7 +29,7 @@ void complexModelTest() {
   group('Complex model:', () {
     test('Assign model from map', () {
       var modelMap = new ModelMap();
-      var model = modelMap.fromMap(ComplexModel, map);
+      var model = modelMap.deserialize(ComplexModel, map);
 
       expect(model.integer, equals(42));
       expect(model.modelList.length, equals(2));
@@ -55,7 +55,7 @@ void complexModelTest() {
           new SimpleModel()..string = 'second model'..float = 1.23
         ]};
 
-      expect(modelMap.toMap(model), equals(map));
+      expect(modelMap.serialize(model), equals(map));
     });
   });
 }

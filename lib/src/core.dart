@@ -7,6 +7,13 @@ import 'adapters.dart';
 
 // TODO(diego): Document
 // TODO(diego): Improve error messages
+/**
+ * An easy to use serializer/deserializer of Dart objects.
+ * 
+ * A [ModelMap] can take almost any object and serialize it into a map of simple
+ * objects (String, int, double, num, bool, List or Map) so that it can be 
+ * easily encoded to JSON, XML or any other format.
+ */
 class ModelMap {
   Map<Type, Deserializer> _deserializers = {};
   Map<Type, Serializer> _serializers = {};
@@ -14,20 +21,30 @@ class ModelMap {
   Map<Type, InstanceProvider> _instanceProviders = {};
   dynamic _workingObject;
   
+  /// All deserializers registered
+  Map<Type, Deserializer> get deserializers =>
+      new UnmodifiableMapView<Type, Deserializer>(_deserializers);
+  
+  /// All serializers registered
+  Map<Type, Serializer> get serializers =>
+      new UnmodifiableMapView<Type, Serializer>(_serializers);
+  
+  /// All instance providers registered
   Map<Type, InstanceProvider> get instanceProviders => 
-      new UnmodifiableMapView(_instanceProviders);
+      new UnmodifiableMapView<Type, InstanceProvider>(_instanceProviders);
   
   ModelMap() {
     _genericTypeAdapter.install(this);
-    setTypeAdapter(String, new StringTypeAdapter());
-    setTypeAdapter(int, new IntTypeAdapter());
-    setTypeAdapter(double, new DoubleTypeAdapter());
-    setTypeAdapter(num, new NumTypeAdapter());
-    setTypeAdapter(bool, new BoolTypeAdapter());
-    setTypeAdapter(DateTime, new DateTimeTypeAdapter());
+    registerTypeAdapter(String, new StringTypeAdapter());
+    registerTypeAdapter(int, new IntTypeAdapter());
+    registerTypeAdapter(double, new DoubleTypeAdapter());
+    registerTypeAdapter(num, new NumTypeAdapter());
+    registerTypeAdapter(bool, new BoolTypeAdapter());
+    registerTypeAdapter(DateTime, new DateTimeTypeAdapter());
   }
   
-  void setTypeAdapter(Type type, adapter) {
+  /// Registers a new [Serializer], [Deserializer] or [TypeAdapter] for [type]
+  void registerTypeAdapter(Type type, adapter) {
     if (adapter is Serializer) {
       adapter.install(this);
       _serializers[type] = adapter;
@@ -39,44 +56,60 @@ class ModelMap {
     }
   }
   
-  void setInstanceProvider(Type type, InstanceProvider instanceProvider) {
+  /// Registers a new [InstanceProvider] for [type]
+  void registerInstanceProvider(Type type, InstanceProvider instanceProvider) {
     _instanceProviders[type] = instanceProvider;
   }
   
-  // TODO(diego): Ensure that this objects serializer returns a map
-  Map<String, dynamic> toMap(dynamic object) => serialize(object);
-  
-  dynamic fromMap(Type targetType, Map<String, dynamic> map) =>
-      deserialize(targetType, map);
-  
-  dynamic serialize(dynamic value) {
+  /**
+   * Returns a serialization of [object] into a simple object.
+   * 
+   * If [object] is already simple, it is returned. If it is a iterable or map, 
+   * all its elements are serialized. In case it is of any other type, either
+   * a custom [Serializer] is used (if registered for such type) or a generic
+   * serializer that uses reflection is used 
+   * (which should be fine for most uses).
+   * 
+   * Note: The keys of a map are transformed to strings using toString().
+   */
+  dynamic serialize(dynamic object) {
     if (_workingObject == null) {
-      _workingObject = value;
-    } else if (_workingObject == value) {
-      throw new ArgumentError("$value has a circular reference.");
+      _workingObject = object;
+    } else if (_workingObject == object) {
+      throw new ArgumentError("object has a circular reference.");
     }
 
     var result;
     
-    if (value is Iterable) {
-      result = new List.from(value.map((i) => serialize(i)));
-    } else if (value is Map) {
-      result = new Map.fromIterables(value.keys, 
-                                    value.values.map((i) => serialize(i)));
-    } else if (_serializers.containsKey(value.runtimeType)) {
-      result = _serializers[value.runtimeType]
-                .serialize(value);
-    } else if (value != null) {
-      result = _genericTypeAdapter.serialize(value);
+    if (object is Iterable) {
+      result = new List.from(object.map((i) => serialize(i)));
+    } else if (object is Map) {
+      result = new Map.fromIterables(object.keys.map((i) => i.toString()), 
+                                     object.values.map((i) => serialize(i)));
+    } else if (_serializers.containsKey(object.runtimeType)) {
+      result = _serializers[object.runtimeType]
+                .serialize(object);
+    } else if (object != null) {
+      result = _genericTypeAdapter.serialize(object);
     }
     
-    if (_workingObject == value) {
+    if (_workingObject == object) {
       _workingObject = null;
     };
     
     return result;
   }
   
+  /**
+   * Returns a deserialization of simple object [value] into an object of 
+   * [targetType].
+   * 
+   * If a custom [Deserializer] is registered for [targetType], it is used, 
+   * otherwise a generic deserializer that uses reflection is used. To 
+   * deserialize objects that do not have a custom deserializer, its class must
+   * have a no-args constructor or an [InstanceProvider] for its type must be
+   * registered.
+   */
   dynamic deserialize(Type targetType, dynamic value) {
     if (_workingObject == null) {
       _workingObject = value;
@@ -106,7 +139,8 @@ class ModelMap {
     var result;
     var classMirror = reflectType(type) as ClassMirror;
     
-    if (classImplements(classMirror, getTypeName(Iterable)) && value is Iterable) {
+    if (classImplements(classMirror, getTypeName(Iterable)) && 
+        value is Iterable) {
       result = new List();
       var valueType = classMirror.typeArguments[0];
 
@@ -132,9 +166,16 @@ class ModelMap {
   }
 }
 
+/**
+ * An abstract class for custom serializers.
+ * 
+ * A custom serializer must be able to take objects of [T] and serialize its 
+ * state into a simple object (String, num, bool, null, List or Map).
+ */
 abstract class Serializer<T> {
   ModelMap modelMap;
   
+  /// Installs this serializer on ModelMap.
   void install(ModelMap modelMap) {
     this.modelMap = modelMap;
   }
@@ -143,9 +184,16 @@ abstract class Serializer<T> {
   
 }
 
+/**
+ * An abstract class for custom deserializers.
+ * 
+ * A custom deserializer must be able to create objects of [T] from a simple 
+ * object (String, num, bool, null, List or Map).
+ */
 abstract class Deserializer<T> {
   ModelMap modelMap;
   
+  /// Installs this deserializer on ModelMap.
   void install(ModelMap modelMap) {
     this.modelMap = modelMap;
   }
@@ -154,16 +202,35 @@ abstract class Deserializer<T> {
   
 }
 
+/**
+ * An abstract class for custom type adapter.
+ * 
+ * A [TypeAdapter] is a object that can serialize and deserialize objects of 
+ * [T].
+ */
 abstract class TypeAdapter<T> implements Serializer<T>, Deserializer<T> {
   ModelMap modelMap;
   
+  /// Installs this type adapter on ModelMap.
   void install(ModelMap modelMap) {
     this.modelMap = modelMap;
   }
 }
 
+/**
+ * A instance provider for type [T].
+ * 
+ * Sometimes you have to deserialize an object of a class that doesn't have a 
+ * no-args constructor. For those cases, you have to create a custom instance
+ * provider that allows ModelMap to create instances of such type.
+ */
 abstract class InstanceProvider<T> {
   
+  /** Returns an instance of [instanceType].
+    * 
+    * A type is passed as parameter to permit the same instance provider to be
+    * registered for several types and still know which one it is providing.
+    */
   T createInstance(Type instanceType);
   
 }
