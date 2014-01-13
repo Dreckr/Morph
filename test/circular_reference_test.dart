@@ -12,8 +12,9 @@ class CircularThree {
   CircularOne one;
 }
 
+// TODO(diego): Test deeper circular reference check
 void circularReferenceTest() {
-  var modelMap = new ModelMap();
+  var morph = new Morph();
   var one = new CircularOne();
   var two = new CircularTwo();
   var three = new CircularThree();
@@ -26,7 +27,7 @@ void circularReferenceTest() {
     test("Serialization throws ArgumentError", () {
       
       var serialization = () {
-        modelMap.serialize(one);
+        morph.serialize(one);
       };
       
       expect(serialization, throwsArgumentError);

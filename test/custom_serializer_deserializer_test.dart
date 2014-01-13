@@ -42,17 +42,17 @@ void customSerializerDeserializerTest() {
   var map = {"string": "part1-part2"};
   var model = new CustomModel("part1", "part2");
   
-  var modelMap = new ModelMap();
-  modelMap.registerTypeAdapter(CustomModel, new CustomModelSerializer());
-  modelMap.registerTypeAdapter(CustomModel, new CustomModelDeserializer());
+  var morph = new Morph();
+  morph.registerTypeAdapter(CustomModel, new CustomModelSerializer());
+  morph.registerTypeAdapter(CustomModel, new CustomModelDeserializer());
   
   group("Custom serializer/deserializer:", () {
     test("Serialization", () {
-      expect(modelMap.serialize(model), equals(map));
+      expect(morph.serialize(model), equals(map));
     });
     
     test("Deserialization", () {
-      var deserializedModel = modelMap.deserialize(CustomModel, map);
+      var deserializedModel = morph.deserialize(CustomModel, map);
       expect(deserializedModel.partA, equals(model.partA));
       expect(deserializedModel.partB, equals(model.partB));
     });

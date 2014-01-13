@@ -1,4 +1,4 @@
-library model_map.annotations;
+library morph.annotations;
 
 const Ignore = const IgnoreAnnotation._();
 class IgnoreAnnotation {

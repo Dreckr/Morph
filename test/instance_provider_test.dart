@@ -21,27 +21,27 @@ class ProvidedInstanceProvider implements InstanceProvider<Provided> {
 }
 
 void instanceProviderTest() {
-  var modelMap;
+  var morph;
   
   group("Instance Provider:", () {
     setUp(() {
-      modelMap = new ModelMap();
+      morph = new Morph();
     });
     
     test(
         "Deserialization without custom instance provider throws ArgumentError",
         () {
       var deserialization = () {
-        Provided model = modelMap.deserialize(Provided, {});
+        Provided model = morph.deserialize(Provided, {});
       };
       
       expect(deserialization, throwsArgumentError);
     });
     
     test("Deserialization using custom instance provider", () {
-      modelMap.registerInstanceProvider(Provided, 
+      morph.registerInstanceProvider(Provided, 
                                         new ProvidedInstanceProvider());
-      Provided model = modelMap.deserialize(Provided, {});
+      Provided model = morph.deserialize(Provided, {});
       
       expect(model.finalString, equals("someString"));
     });

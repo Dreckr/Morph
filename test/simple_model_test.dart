@@ -1,7 +1,7 @@
 part of model_map_test;
 
 
-class SimpleModel extends ModelMap {
+class SimpleModel {
   String string;
   int integer;
   bool flag;
@@ -10,6 +10,8 @@ class SimpleModel extends ModelMap {
 }
 
 void simpleModelTest() {
+  var morph = new Morph();
+  
   // Create an ISO 8601 date
   var now    = new DateTime.now();
   var date  = now.toString().replaceFirst(' ', 'T');
@@ -19,8 +21,7 @@ void simpleModelTest() {
 
   group('Simple model:', () {
     test('Assign values from map', () {
-      var modelMap = new ModelMap();
-      var model = modelMap.deserialize(SimpleModel, map);
+      var model = morph.deserialize(SimpleModel, map);
 
       expect(model.string, equals('some text'));
       expect(model.integer, equals(42));
@@ -30,7 +31,6 @@ void simpleModelTest() {
     });
 
     test('Extract values to map', () {
-      var modelMap = new ModelMap();
       var model = new SimpleModel()
         ..string  = 'some text'
         ..integer  = 42
@@ -38,7 +38,7 @@ void simpleModelTest() {
         ..float    = 1.23
         ..date    = now;
 
-      expect(modelMap.serialize(model), equals(map));
+      expect(morph.serialize(model), equals(map));
     });
   });
 }

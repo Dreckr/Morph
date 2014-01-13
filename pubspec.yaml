@@ -1,10 +1,9 @@
-name: model_map
-version: 0.3.0
+name: morph
+version: 0.1.0
 authors:
-- Dan Parnham <dan@teadriven.me.uk>
 - Diego Rocha <diego.rocha.comp@gmail.com>
-description: Mirror based model mapping
-homepage: http://github.com/parnham/model_map.dart
+- Dan Parnham <dan@teadriven.me.uk>
+homepage: https://github.com/Dreckr/Morph
 environment:
   sdk: '>=1.1.0-dev.4.0 <2.0.0'
 dependencies:

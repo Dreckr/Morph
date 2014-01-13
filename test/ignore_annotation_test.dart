@@ -19,7 +19,7 @@ class IgnoreModel {
 }
 
 void ignoreAnnotationTest() {
-  var modelMap = new ModelMap();
+  var morph = new Morph();
   var model = new IgnoreModel()
                 ..someString = "someString"
                 ..ignoredString = "ignoredString"
@@ -33,7 +33,7 @@ void ignoreAnnotationTest() {
   
   group("Ignore annotation:", () {
     test("Serialization",() {
-      var serializedModel = modelMap.serialize(model);
+      var serializedModel = morph.serialize(model);
       
       expect(serializedModel, new isInstanceOf<Map>());
       expect(serializedModel["someString"], equals(model.someString));
@@ -43,7 +43,7 @@ void ignoreAnnotationTest() {
     });
     
     test("Deserialization", () {
-      var deserializedModel = modelMap.deserialize(IgnoreModel, map);
+      var deserializedModel = morph.deserialize(IgnoreModel, map);
       
       expect(deserializedModel, new isInstanceOf<IgnoreModel>());
       expect(deserializedModel.someString, equals("someString"));

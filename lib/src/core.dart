@@ -1,4 +1,4 @@
-library model_map.core;
+library morph.core;
 
 import 'dart:convert';
 import 'dart:mirrors';
@@ -8,19 +8,19 @@ import 'adapters.dart';
 
 // TODO(diego): Document
 // TODO(diego): Improve error messages
+// TODO(diego): Circular reference check
 /**
  * An easy to use serializer/deserializer of Dart objects.
  * 
- * A [ModelMap] can take almost any object and serialize it into a map of simple
+ * A [Morph] can take almost any object and serialize it into a map of simple
  * objects (String, int, double, num, bool, List or Map) so that it can be 
  * easily encoded to JSON, XML or any other format.
  */
-class ModelMap {
+class Morph {
   Map<Type, Deserializer> _deserializers = {};
   Map<Type, Serializer> _serializers = {};
   TypeAdapter _genericTypeAdapter = new GenericTypeAdapter();
   Map<Type, InstanceProvider> _instanceProviders = {};
-  dynamic _workingObject;
   
   /// All deserializers registered
   Map<Type, Deserializer> get deserializers =>
@@ -34,7 +34,7 @@ class ModelMap {
   Map<Type, InstanceProvider> get instanceProviders => 
       new UnmodifiableMapView<Type, InstanceProvider>(_instanceProviders);
   
-  ModelMap() {
+  Morph() {
     _genericTypeAdapter.install(this);
     registerTypeAdapter(String, new StringTypeAdapter());
     registerTypeAdapter(int, new IntTypeAdapter());
@@ -73,17 +73,11 @@ class ModelMap {
    * 
    * Optionally, you can pass a encoder to transform the output. For example,
    * if you want to serialize an object into a JSON string, you can call
-   * 'modelMap.serialize(object, JSON.encoder)'.
+   * 'morph.serialize(object, JSON.encoder)'.
    * 
    * Note: The keys of a map are transformed to strings using toString().
    */
   dynamic serialize(dynamic object, [Converter<Object, Object> encoder]) {
-    if (_workingObject == null) {
-      _workingObject = object;
-    } else if (_workingObject == object) {
-      throw new ArgumentError("object has a circular reference.");
-    }
-
     var result;
     
     if (object is Iterable) {
@@ -97,11 +91,7 @@ class ModelMap {
     } else if (object != null) {
       result = _genericTypeAdapter.serialize(object);
     }
-    
-    if (_workingObject == object) {
-      _workingObject = null;
-    };
-    
+
     if (encoder != null) {
       result = encoder.convert(result);
     }
@@ -121,15 +111,10 @@ class ModelMap {
    * 
    * Optionally, you can pass a decoder to transform the input. For example,
    * if your input [value] is a JSON string, you can call 
-   * 'modelMap.deserialize(SomeType, input, JSON.decoder)'.
+   * 'morph.deserialize(SomeType, input, JSON.decoder)'.
    */
   dynamic deserialize(Type targetType, dynamic value, 
                       [Converter<Object, Object> decoder]) {
-    if (_workingObject == null) {
-      _workingObject = value;
-    } else if (_workingObject == value) {
-      throw new ArgumentError("$value has a circular reference.");
-    }
     
     if (decoder != null) {
       value = decoder.convert(value);
@@ -144,10 +129,6 @@ class ModelMap {
       return _deserializers[targetType].deserialize(value, targetType);
     } else if (value != null) {
       return _genericTypeAdapter.deserialize(value, targetType);
-    }
-    
-    if (_workingObject == value) {
-      _workingObject = null;
     }
     
     return null;
@@ -191,11 +172,11 @@ class ModelMap {
  * state into a simple object (String, num, bool, null, List or Map).
  */
 abstract class Serializer<T> {
-  ModelMap modelMap;
+  Morph morph;
   
-  /// Installs this serializer on ModelMap.
-  void install(ModelMap modelMap) {
-    this.modelMap = modelMap;
+  /// Installs this serializer on Morph.
+  void install(Morph morph) {
+    this.morph = morph;
   }
   
   dynamic serialize(T object);
@@ -209,11 +190,11 @@ abstract class Serializer<T> {
  * object (String, num, bool, null, List or Map).
  */
 abstract class Deserializer<T> {
-  ModelMap modelMap;
+  Morph morph;
   
-  /// Installs this deserializer on ModelMap.
-  void install(ModelMap modelMap) {
-    this.modelMap = modelMap;
+  /// Installs this deserializer on Morph.
+  void install(Morph morph) {
+    this.morph = morph;
   }
   
   T deserialize(object, Type targetType);
@@ -227,11 +208,11 @@ abstract class Deserializer<T> {
  * [T].
  */
 abstract class TypeAdapter<T> implements Serializer<T>, Deserializer<T> {
-  ModelMap modelMap;
+  Morph morph;
   
-  /// Installs this type adapter on ModelMap.
-  void install(ModelMap modelMap) {
-    this.modelMap = modelMap;
+  /// Installs this type adapter on Morph.
+  void install(Morph morph) {
+    this.morph = morph;
   }
 }
 
@@ -240,7 +221,7 @@ abstract class TypeAdapter<T> implements Serializer<T>, Deserializer<T> {
  * 
  * Sometimes you have to deserialize an object of a class that doesn't have a 
  * no-args constructor. For those cases, you have to create a custom instance
- * provider that allows ModelMap to create instances of such type.
+ * provider that allows Morph to create instances of such type.
  */
 abstract class InstanceProvider<T> {
   

@@ -8,27 +8,25 @@ class CollectionsModel
 }
 
 
-void collectionsModelTest()
-{
+void collectionsModelTest() {
+  var morph = new Morph();
   var map = { 'map': { 'first': 42, 'second': 123 }, 
               'list': [ 'list', 'of', 'strings' ] };
 
   group('Collections model:', () {
     test('Assign collections from map', () {
-      var modelMap = new ModelMap();
-      var model = modelMap.deserialize(CollectionsModel, map);
+      var model = morph.deserialize(CollectionsModel, map);
 
       expect(model.map, equals(map['map']));
       expect(model.list, equals(map['list']));
     });
 
     test('Extract collections to map', () {
-      var modelMap = new ModelMap();
       var model = new CollectionsModel()
        ..map  = { 'first': 42, 'second': 123 }
        ..list  = [ 'list', 'of', 'strings' ];
 
-      expect(modelMap.serialize(model), equals(map));
+      expect(morph.serialize(model), equals(map));
     });
   });
 }

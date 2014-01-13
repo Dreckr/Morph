@@ -10,7 +10,7 @@ class PropertyModel {
 }
 
 void propertyAnnotationTest() {
-  var modelMap = new ModelMap();
+  var morph = new Morph();
   var model = new PropertyModel()
                 ..someString = "someString"
                 ..named = "named";
@@ -19,13 +19,13 @@ void propertyAnnotationTest() {
   
   group("Property annotation:", () {
     test("Serialization", () {
-      var serializedModel = modelMap.serialize(model);
+      var serializedModel = morph.serialize(model);
       
       expect(serializedModel, equals(map));
     });
     
     test("Deserialization", () {
-      var deserializedModel = modelMap.deserialize(PropertyModel, map);
+      var deserializedModel = morph.deserialize(PropertyModel, map);
       
       expect(deserializedModel, new isInstanceOf<PropertyModel>());
       expect(deserializedModel.someString, equals("someString"));

@@ -1,4 +1,4 @@
-library model_map.adapters;
+library morph.adapters;
 
 import 'dart:mirrors';
 import 'annotations.dart';
@@ -22,7 +22,7 @@ class GenericTypeAdapter extends TypeAdapter {
       .forEach((member) {
         var name  = _getPropertyName(member);
         var value = 
-                  modelMap.serialize(im.getField(member.simpleName).reflectee);
+                  morph.serialize(im.getField(member.simpleName).reflectee);
   
         if (value != null) result[name] = value;
     });
@@ -55,7 +55,7 @@ class GenericTypeAdapter extends TypeAdapter {
   
           if (member.type is ClassMirror && object.containsKey(name)) {
             im.setField(member.simpleName, 
-                        modelMap.deserialize(member.type.reflectedType,
+                        morph.deserialize(member.type.reflectedType,
                                              object[name]));
           }
        });
@@ -82,7 +82,7 @@ class GenericTypeAdapter extends TypeAdapter {
           
           if (type is ClassMirror && object.containsKey(propertyName)) {
             im.setField(MirrorSystem.getSymbol(name), 
-                        modelMap.deserialize(type.reflectedType, 
+                        morph.deserialize(type.reflectedType, 
                                              object[propertyName]));
           }
        });
@@ -91,8 +91,8 @@ class GenericTypeAdapter extends TypeAdapter {
   }
   
   dynamic _createInstanceOf(Type type) {
-    if (modelMap.instanceProviders.containsKey(type)) {
-      return modelMap.instanceProviders[type].createInstance(type);
+    if (morph.instanceProviders.containsKey(type)) {
+      return morph.instanceProviders[type].createInstance(type);
     } else {
       return _genericInstanceProvider.createInstance(type);
     }

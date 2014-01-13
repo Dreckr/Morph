@@ -10,6 +10,7 @@ class ComplexModel {
 }
 
 void complexModelTest() {
+  var morph = new Morph();
   var now = new DateTime.now();
   var today = now.toString().replaceFirst(' ', 'T');
   var tomorrow = 
@@ -25,11 +26,9 @@ void complexModelTest() {
                                   { 'string': 'second model', 'float': 1.23 }] }
   };
 
-
   group('Complex model:', () {
     test('Assign model from map', () {
-      var modelMap = new ModelMap();
-      var model = modelMap.deserialize(ComplexModel, map);
+      var model = morph.deserialize(ComplexModel, map);
 
       expect(model.integer, equals(42));
       expect(model.modelList.length, equals(2));
@@ -41,7 +40,6 @@ void complexModelTest() {
     });
 
     test('Extract model to map', () {
-      var modelMap = new ModelMap();
       var model = new ComplexModel()
         ..integer    = 42
         ..dateMap    = { 'Today': now, 'Tomorrow': now.add(new Duration(days: 1)) }
@@ -55,7 +53,7 @@ void complexModelTest() {
           new SimpleModel()..string = 'second model'..float = 1.23
         ]};
 
-      expect(modelMap.serialize(model), equals(map));
+      expect(morph.serialize(model), equals(map));
     });
   });
 }

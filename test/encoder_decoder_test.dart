@@ -1,7 +1,7 @@
 part of model_map_test;
 
 void encoderDecoderTest() {
-  ModelMap modelMap;
+  Morph morph;
   var now    = new DateTime.now();
   var date  = now.toString().replaceFirst(' ', 'T');
   var map    = { 'string': 'some text', 'integer': 42, 
@@ -17,16 +17,16 @@ void encoderDecoderTest() {
   
   group("Encoder/decoder test", () {
     setUp(() {
-      modelMap = new ModelMap();
+      morph = new Morph();
     });
     
     test("Transform output with encoder", () {
-      var result = modelMap.serialize(model, JSON.encoder);
+      var result = morph.serialize(model, JSON.encoder);
       expect(result, equals(json));
     });
     
     test("Transform input with decoder", () {
-      var result = modelMap.deserialize(SimpleModel, json, JSON.decoder);
+      var result = morph.deserialize(SimpleModel, json, JSON.decoder);
       
       expect(result.string, equals('some text'));
       expect(result.integer, equals(42));
