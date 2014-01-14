@@ -1,5 +1,6 @@
 library morph.core;
 
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:mirrors';
 import 'package:quiver/mirrors.dart';
@@ -21,6 +22,7 @@ class Morph {
   Map<Type, Serializer> _serializers = {};
   TypeAdapter _genericTypeAdapter = new GenericTypeAdapter();
   Map<Type, InstanceProvider> _instanceProviders = {};
+  Queue _workingObjects = new Queue();
   
   /// All deserializers registered
   Map<Type, Deserializer> get deserializers =>
@@ -78,6 +80,12 @@ class Morph {
    * Note: The keys of a map are transformed to strings using toString().
    */
   dynamic serialize(dynamic object, [Converter<Object, Object> encoder]) {
+    if (_workingObjects.contains(object)) {
+      throw new ArgumentError("$object contains a circular reference");
+    }
+    
+    _workingObjects.addLast(object);
+      
     var result;
     
     if (object is Iterable) {
@@ -95,6 +103,8 @@ class Morph {
     if (encoder != null) {
       result = encoder.convert(result);
     }
+    
+    _workingObjects.removeLast();
     
     return result;
   }
@@ -116,22 +126,31 @@ class Morph {
   dynamic deserialize(Type targetType, dynamic value, 
                       [Converter<Object, Object> decoder]) {
     
+    if (_workingObjects.contains(value)) {
+      throw new ArgumentError("$value contains a circular reference");
+    }
+    
+    _workingObjects.addLast(value);
+    
     if (decoder != null) {
       value = decoder.convert(value);
     }
     
     var classMirror = reflectClass(targetType);
     
+    var result;
     if (classImplements(classMirror, getTypeName(Iterable)) || 
         classImplements(classMirror, getTypeName(Map))) {
-      return _deserializeComplex(targetType, value);
+      result = _deserializeComplex(targetType, value);
     } else if (_deserializers.containsKey(targetType)) {
-      return _deserializers[targetType].deserialize(value, targetType);
+      result = _deserializers[targetType].deserialize(value, targetType);
     } else if (value != null) {
-      return _genericTypeAdapter.deserialize(value, targetType);
+      result = _genericTypeAdapter.deserialize(value, targetType);
     }
     
-    return null;
+    _workingObjects.removeLast();
+    
+    return result;
   }
 
   dynamic _deserializeComplex(Type type, dynamic value) {

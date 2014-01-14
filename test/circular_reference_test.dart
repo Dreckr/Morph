@@ -10,21 +10,39 @@ class CircularTwo {
 
 class CircularThree {
   CircularOne one;
+  
+  CircularTwo two;
 }
 
 // TODO(diego): Test deeper circular reference check
 void circularReferenceTest() {
   var morph = new Morph();
-  var one = new CircularOne();
-  var two = new CircularTwo();
-  var three = new CircularThree();
-  
-  one.two = two;
-  two.three = three;
-  three.one = one;
+  var one;
+  var two;
+  var three;
   
   group("Circular reference:", () {
-    test("Serialization throws ArgumentError", () {
+    setUp(() {
+      one = new CircularOne();
+      two = new CircularTwo();
+      three = new CircularThree();
+      
+      one.two = two;
+      two.three = three;
+    });
+    
+    test("Direct circular reference throws ArgumentError", () {
+      three.one = one;
+      
+      var serialization = () {
+        morph.serialize(one);
+      };
+      
+      expect(serialization, throwsArgumentError);
+    });
+    
+    test("Indirect circular reference throws ArgumentError", () {
+      three.two = two;
       
       var serialization = () {
         morph.serialize(one);

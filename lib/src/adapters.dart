@@ -81,7 +81,7 @@ class GenericTypeAdapter extends TypeAdapter {
           var type = member.parameters[0].type;
           
           if (type is ClassMirror && object.containsKey(propertyName)) {
-            im.setField(MirrorSystem.getSymbol(name), 
+            im.setField(MirrorSystem.getSymbol(name, type.owner), 
                         morph.deserialize(type.reflectedType, 
                                              object[propertyName]));
           }
