@@ -5,7 +5,7 @@ authors:
 - Dan Parnham <dan@teadriven.me.uk>
 homepage: https://github.com/Dreckr/Morph
 environment:
-  sdk: '>=1.1.0-dev.4.0 <2.0.0'
+  sdk: '>=1.0.0 <2.0.0'
 dependencies:
   collection: any
   quiver: any
