@@ -23,6 +23,8 @@ Getting Started
 Using Morph is really straightforward:
 
 ```dart
+import 'package:morph/morph.dart';
+
 void main() {
   var morph = new Morph();
   var someObject = new SomeClass();
