@@ -40,7 +40,7 @@ void instanceProviderTest() {
     
     test("Deserialization using custom instance provider", () {
       morph.registerInstanceProvider(Provided, 
-                                        new ProvidedInstanceProvider());
+                                     new ProvidedInstanceProvider());
       Provided model = morph.deserialize(Provided, {});
       
       expect(model.finalString, equals("someString"));

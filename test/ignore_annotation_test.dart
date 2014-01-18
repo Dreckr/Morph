@@ -11,10 +11,10 @@ class IgnoreModel {
   @Ignore String get hiddenString => _hiddenString;
                  set hiddenString (String value) => _hiddenString = value;
   
-  String _unmodifiableString = "Initial value";
-  String get unmodifiableString => _unmodifiableString;
+  String _preservedString = "Initial value";
+  String get preservedString => _preservedString;
          @Ignore 
-         set unmodifiableString (String value) => _unmodifiableString = value;
+         set preservedString (String value) => _preservedString = value;
                  
 }
 
@@ -24,12 +24,12 @@ void ignoreAnnotationTest() {
                 ..someString = "someString"
                 ..ignoredString = "ignoredString"
                 ..hiddenString = "hiddenString"
-                ..unmodifiableString = "unmodifiableString";
+                ..preservedString = "preservedString";
   
   var map = {"someString": "someString", 
              "ignoredString": "ignoredString",
              "hiddenString": "hiddenString",
-             "unmodifiableString": "unmodifiableString"};
+             "preservedString": "preservedString"};
   
   group("Ignore annotation:", () {
     test("Serialization",() {
@@ -39,7 +39,7 @@ void ignoreAnnotationTest() {
       expect(serializedModel["someString"], equals(model.someString));
       expect(serializedModel["ignoredString"], isNull);
       expect(serializedModel["hiddenString"], isNull);
-      expect(serializedModel["unmodifiableString"], equals("unmodifiableString"));
+      expect(serializedModel["preservedString"], equals("preservedString"));
     });
     
     test("Deserialization", () {
@@ -49,7 +49,7 @@ void ignoreAnnotationTest() {
       expect(deserializedModel.someString, equals("someString"));
       expect(deserializedModel.ignoredString, isNull);
       expect(deserializedModel.hiddenString, equals("hiddenString"));
-      expect(deserializedModel.unmodifiableString, equals("Initial value"));
+      expect(deserializedModel.preservedString, equals("Initial value"));
     });
     
   });

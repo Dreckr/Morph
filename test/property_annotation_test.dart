@@ -9,6 +9,7 @@ class PropertyModel {
   
 }
 
+// TODO(diego): Add tests for getters and setters
 void propertyAnnotationTest() {
   var morph = new Morph();
   var model = new PropertyModel()
