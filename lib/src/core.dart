@@ -6,10 +6,11 @@ import 'dart:mirrors';
 import 'package:quiver/mirrors.dart';
 import 'package:collection/collection.dart';
 import 'adapters.dart';
+import 'annotations.dart';
+import 'mirrors_util.dart' as MirrorsUtil;
 
 // TODO(diego): Document
 // TODO(diego): Improve error messages
-// TODO(diego): Circular reference check
 /**
  * An easy to use serializer/deserializer of Dart objects.
  * 
@@ -20,8 +21,8 @@ import 'adapters.dart';
 class Morph {
   Map<Type, Deserializer> _deserializers = {};
   Map<Type, Serializer> _serializers = {};
-  TypeAdapter _genericTypeAdapter = new GenericTypeAdapter();
-  Map<Type, InstanceProvider> _instanceProviders = {};
+  CustomTypeAdapter _genericTypeAdapter = new GenericTypeAdapter();
+  Map<Type, CustomInstanceProvider> _instanceProviders = {};
   Queue _workingObjects = new Queue();
   
   /// All deserializers registered
@@ -33,8 +34,8 @@ class Morph {
       new UnmodifiableMapView<Type, Serializer>(_serializers);
   
   /// All instance providers registered
-  Map<Type, InstanceProvider> get instanceProviders => 
-      new UnmodifiableMapView<Type, InstanceProvider>(_instanceProviders);
+  Map<Type, CustomInstanceProvider> get instanceProviders => 
+      new UnmodifiableMapView<Type, CustomInstanceProvider>(_instanceProviders);
   
   Morph() {
     _genericTypeAdapter.install(this);
@@ -46,7 +47,7 @@ class Morph {
     registerTypeAdapter(DateTime, new DateTimeTypeAdapter());
   }
   
-  /// Registers a new [Serializer], [Deserializer] or [TypeAdapter] for [type]
+  /// Registers a new [Serializer], [Deserializer] or [CustomTypeAdapter] for [type]
   void registerTypeAdapter(Type type, adapter) {
     if (adapter is Serializer) {
       adapter.install(this);
@@ -59,9 +60,9 @@ class Morph {
     }
   }
   
-  /// Registers a new [InstanceProvider] for [type]
-  void registerInstanceProvider(Type type, InstanceProvider instanceProvider) {
-    _instanceProviders[type] = instanceProvider;
+  /// Registers a new [CustomInstanceProvider] for [type]
+  void registerInstanceProvider(Type type, CustomInstanceProvider CustomInstanceProvider) {
+    _instanceProviders[type] = CustomInstanceProvider;
   }
   
   /**
@@ -93,7 +94,9 @@ class Morph {
     } else if (object is Map) {
       result = new Map.fromIterables(object.keys.map((i) => i.toString()), 
                                      object.values.map((i) => serialize(i)));
-    } else if (_serializers.containsKey(object.runtimeType)) {
+    } else if (_serializers.containsKey(object.runtimeType) ||
+                (_checkForTypeAdapters(object.runtimeType) &&
+                  _serializers.containsKey(object.runtimeType))) {
       result = _serializers[object.runtimeType]
                 .serialize(object);
     } else if (object != null) {
@@ -116,7 +119,7 @@ class Morph {
    * If a custom [Deserializer] is registered for [targetType], it is used, 
    * otherwise a generic deserializer that uses reflection is used. To 
    * deserialize objects that do not have a custom deserializer, its class must
-   * have a no-args constructor or an [InstanceProvider] for its type must be
+   * have a no-args constructor or an [CustomInstanceProvider] for its type must be
    * registered.
    * 
    * Optionally, you can pass a decoder to transform the input. For example,
@@ -142,7 +145,9 @@ class Morph {
     if (classImplements(classMirror, getTypeName(Iterable)) || 
         classImplements(classMirror, getTypeName(Map))) {
       result = _deserializeComplex(targetType, value);
-    } else if (_deserializers.containsKey(targetType)) {
+    } else if (_deserializers.containsKey(targetType) ||
+                (_checkForTypeAdapters(targetType) && 
+                  _deserializers.containsKey(targetType))) {
       result = _deserializers[targetType].deserialize(value, targetType);
     } else if (value != null) {
       result = _genericTypeAdapter.deserialize(value, targetType);
@@ -181,6 +186,23 @@ class Morph {
     }
 
     return result;
+  }
+  
+  bool _checkForTypeAdapters(Type type) {
+    var foundTypeAdapter = false;
+    var classMirror = reflectClass(type);
+    classMirror.metadata.where(
+        (metadata) => metadata.reflectee is TypeAdapter
+    ).forEach((typeAdapterMetadata) {
+      foundTypeAdapter = true;
+      var adapter = 
+          MirrorsUtil.createInstanceOf(
+              typeAdapterMetadata.reflectee.typeAdapter);
+      
+      registerTypeAdapter(type, adapter);
+    });
+    
+    return foundTypeAdapter;
   }
 }
 
@@ -223,10 +245,10 @@ abstract class Deserializer<T> {
 /**
  * An abstract class for custom type adapter.
  * 
- * A [TypeAdapter] is a object that can serialize and deserialize objects of 
+ * A [CustomTypeAdapter] is a object that can serialize and deserialize objects of 
  * [T].
  */
-abstract class TypeAdapter<T> implements Serializer<T>, Deserializer<T> {
+abstract class CustomTypeAdapter<T> implements Serializer<T>, Deserializer<T> {
   Morph morph;
   
   /// Installs this type adapter on Morph.
@@ -242,7 +264,7 @@ abstract class TypeAdapter<T> implements Serializer<T>, Deserializer<T> {
  * no-args constructor. For those cases, you have to create a custom instance
  * provider that allows Morph to create instances of such type.
  */
-abstract class InstanceProvider<T> {
+abstract class CustomInstanceProvider<T> {
   
   /** Returns an instance of [instanceType].
     * 

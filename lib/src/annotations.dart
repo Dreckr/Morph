@@ -11,3 +11,15 @@ class Property {
   
   const Property(this.name);
 }
+
+class TypeAdapter {
+  final Type typeAdapter;
+  
+  const TypeAdapter(this.typeAdapter);
+}
+
+class InstanceProvider {
+  final Type instanceProvider;
+  
+  const InstanceProvider(this.instanceProvider);
+}

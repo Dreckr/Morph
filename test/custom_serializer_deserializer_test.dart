@@ -1,5 +1,7 @@
 part of model_map_test;
 
+@TypeAdapter(CustomModelSerializer)
+@TypeAdapter(CustomModelDeserializer)
 class CustomModel {
   final String partA, partB;
   
@@ -43,8 +45,6 @@ void customSerializerDeserializerTest() {
   var model = new CustomModel("part1", "part2");
   
   var morph = new Morph();
-  morph.registerTypeAdapter(CustomModel, new CustomModelSerializer());
-  morph.registerTypeAdapter(CustomModel, new CustomModelDeserializer());
   
   group("Custom serializer/deserializer:", () {
     test("Serialization", () {

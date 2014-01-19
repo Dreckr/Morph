@@ -38,4 +38,5 @@ void main() {
   instanceProviderTest();
   
   encoderDecoderTest();
+  
 }

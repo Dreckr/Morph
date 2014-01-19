@@ -120,8 +120,19 @@ class CustomModelDeserializer extends Deserializer<CustomModel> {
 }
 ```
 
-This feature is useful when your communication protocol differs from your 
-internal interface.
+You can also define a serializer or deserializer using the `@TypeAdapter` 
+annotation.
+
+```dart
+@TypeAdapter(CustomModelSerializer)
+@TypeAdapter(CustomModelDeserializer)
+class CustomModel {
+  final String partA, partB;
+  
+  CustomModel(this.partA, this.partB);
+
+}
+```
 
 ### Instance provider
 Morph cannot deserialize instances of a classe that do not have a no-args 
@@ -132,8 +143,8 @@ fresh and clean instance of such class.
 ```dart
 void main() {
   var morph = new Morph();
-  morph.registerInstanceProvider(Provided, 
-                                 new CustomInstanceProvider());
+  morph.registerInstanceProvider(ProvidedModel, 
+                                 new ProvidedModelInstanceProvider());
 }
 
 class ProvidedModel {
@@ -143,7 +154,8 @@ class ProvidedModel {
 
 }
 
-class CustomInstanceProvider implements InstanceProvider<ProvidedModel> {
+class ProvidedModelInstanceProvider 
+  implements CustomInstanceProvider<ProvidedModel> {
   
   Provided createInstance(Type instanceType) {
     if (instanceType == ProvidedModel) {
@@ -153,6 +165,19 @@ class CustomInstanceProvider implements InstanceProvider<ProvidedModel> {
                                "instances of type $instanceType");
     }
   }
+
+}
+```
+
+Alternatively, you can define instance providers using the `@InstanceProvider`
+annotation.
+
+```dart
+@InstanceProvider(ProvidedModelInstanceProvider)
+class ProvidedModel {
+  final String finalString;
+
+  ProvidedModel(this.finalString);
 
 }
 ```

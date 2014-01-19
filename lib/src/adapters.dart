@@ -3,9 +3,11 @@ library morph.adapters;
 import 'dart:mirrors';
 import 'annotations.dart';
 import 'core.dart';
+import 'mirrors_util.dart' as MirrorsUtil;
 
-class GenericTypeAdapter extends TypeAdapter {
-  InstanceProvider _genericInstanceProvider = new _GenericInstanceProvider();
+class GenericTypeAdapter extends CustomTypeAdapter {
+  CustomInstanceProvider _genericInstanceProvider = 
+      new _GenericInstanceProvider();
   
   Map<String, dynamic> serialize(object) {
     var result  = new Map<String, dynamic>();
@@ -94,7 +96,22 @@ class GenericTypeAdapter extends TypeAdapter {
     if (morph.instanceProviders.containsKey(type)) {
       return morph.instanceProviders[type].createInstance(type);
     } else {
-      return _genericInstanceProvider.createInstance(type);
+      var classMirror = reflectClass(type);
+      var instanceMirrorMetadata = classMirror.metadata.firstWhere(
+          (metadata) => metadata.reflectee is InstanceProvider, 
+          orElse: () => null);
+      
+      if (instanceMirrorMetadata != null ) {
+        CustomInstanceProvider customInstanceProvider = 
+            MirrorsUtil.createInstanceOf(
+                instanceMirrorMetadata.reflectee.instanceProvider);
+        
+        morph.registerInstanceProvider(type, customInstanceProvider);
+        
+        return customInstanceProvider.createInstance(type);
+      } else {
+        return _genericInstanceProvider.createInstance(type);
+      }
     }
   }
   
@@ -120,7 +137,7 @@ class GenericTypeAdapter extends TypeAdapter {
   }
 }
 
-class StringTypeAdapter extends TypeAdapter<String> {
+class StringTypeAdapter extends CustomTypeAdapter<String> {
   
   dynamic serialize(String object) {
     return object;
@@ -132,7 +149,7 @@ class StringTypeAdapter extends TypeAdapter<String> {
   
 }
 
-class NumTypeAdapter extends TypeAdapter<num> {
+class NumTypeAdapter extends CustomTypeAdapter<num> {
   
   dynamic serialize(num object) {
     return object;
@@ -153,7 +170,7 @@ class NumTypeAdapter extends TypeAdapter<num> {
   
 }
 
-class IntTypeAdapter extends TypeAdapter<int> {
+class IntTypeAdapter extends CustomTypeAdapter<int> {
   
   dynamic serialize(int object) {
     return object;
@@ -174,7 +191,7 @@ class IntTypeAdapter extends TypeAdapter<int> {
   
 }
 
-class DoubleTypeAdapter extends TypeAdapter<double> {
+class DoubleTypeAdapter extends CustomTypeAdapter<double> {
   
   dynamic serialize(double object) {
     return object;
@@ -195,7 +212,7 @@ class DoubleTypeAdapter extends TypeAdapter<double> {
   
 }
 
-class BoolTypeAdapter extends TypeAdapter<bool> {
+class BoolTypeAdapter extends CustomTypeAdapter<bool> {
   
   dynamic serialize(bool object) {
     return object;
@@ -219,7 +236,7 @@ class BoolTypeAdapter extends TypeAdapter<bool> {
   
 }
 
-class DateTimeTypeAdapter extends TypeAdapter<DateTime> {
+class DateTimeTypeAdapter extends CustomTypeAdapter<DateTime> {
   
   dynamic serialize(DateTime object) {
     return object.toString().replaceFirst(' ', 'T');
@@ -240,26 +257,10 @@ class DateTimeTypeAdapter extends TypeAdapter<DateTime> {
   
 }
 
-class _GenericInstanceProvider implements InstanceProvider {
+// TODO(diego): Support non-default constructors
+class _GenericInstanceProvider implements CustomInstanceProvider {
   
   dynamic createInstance(Type instanceType) {
-    var classMirror = reflectClass(instanceType);
-    var constructors = classMirror.declarations.values.where(
-      (declaration) =>
-        (declaration is MethodMirror) && (declaration.isConstructor));
-    
-    var selectedConstructor = constructors.firstWhere(
-        (constructor) => constructor.parameters.where(
-            (parameter) => !parameter.isOptional).length == 0
-            , orElse: () =>  null);
-    
-    if (selectedConstructor == null) {
-      throw new ArgumentError("${classMirror.reflectedType} does not have a "
-                               "no-args constructor or "
-                               "an instance provider.");
-    }
-    
-    return classMirror
-              .newInstance(selectedConstructor.constructorName, []).reflectee;
+    return MirrorsUtil.createInstanceOf(instanceType);
   }
 }

@@ -1,19 +1,21 @@
 part of model_map_test;
 
-class Provided {
+@InstanceProvider(ProvidedModelInstanceProvider)
+class ProvidedModel {
   final String finalString;
 
-  Provided(this.finalString);
+  ProvidedModel(this.finalString);
 
 }
 
-class ProvidedInstanceProvider implements InstanceProvider<Provided> {
+class ProvidedModelInstanceProvider 
+  implements CustomInstanceProvider<ProvidedModel> {
   
-  Provided createInstance(Type instanceType) {
-    if (instanceType == Provided) {
-      return new Provided("someString");
+  ProvidedModel createInstance(Type instanceType) {
+    if (instanceType == ProvidedModel) {
+      return new ProvidedModel("someString");
     } else {
-      throw new ArgumentError("ProvidedInstanceProvider can't provide "
+      throw new ArgumentError("ProvidedModelInstanceProvider can't provide "
                                "instances of type $instanceType");
     }
   }
@@ -28,20 +30,16 @@ void instanceProviderTest() {
       morph = new Morph();
     });
     
-    test(
-        "Deserialization without custom instance provider throws ArgumentError",
-        () {
-      var deserialization = () {
-        Provided model = morph.deserialize(Provided, {});
-      };
+    test("Deserialization with annotated custom instance provider ",() {
+      ProvidedModel model = morph.deserialize(ProvidedModel, {});
       
-      expect(deserialization, throwsArgumentError);
+      expect(model.finalString, equals("someString"));
     });
     
     test("Deserialization using custom instance provider", () {
-      morph.registerInstanceProvider(Provided, 
-                                     new ProvidedInstanceProvider());
-      Provided model = morph.deserialize(Provided, {});
+      morph.registerInstanceProvider(ProvidedModel, 
+                                     new ProvidedModelInstanceProvider());
+      ProvidedModel model = morph.deserialize(ProvidedModel, {});
       
       expect(model.finalString, equals("someString"));
     });
