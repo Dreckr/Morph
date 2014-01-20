@@ -19,14 +19,18 @@ class GenericTypeAdapter extends CustomTypeAdapter {
       .where(
          (member) => 
              (member is VariableMirror || 
-                 (member is MethodMirror && member.isGetter)) &&
-            !member.isPrivate && !member.isStatic && !_shouldIgnore(member))
+             (member is MethodMirror && member.isGetter)) &&
+            !member.isPrivate && 
+            !member.isStatic && 
+            !_shouldIgnore(member))
       .forEach((member) {
         var name  = _getPropertyName(member);
-        var value = 
-                  morph.serialize(im.getField(member.simpleName).reflectee);
+        var value = im.getField(member.simpleName).reflectee;
+        
+        if (value != null) {
+          result[name] = morph.serialize(value);
+        }
   
-        if (value != null) result[name] = value;
     });
 
     return result;
@@ -253,6 +257,71 @@ class DateTimeTypeAdapter extends CustomTypeAdapter<DateTime> {
       throw 
         new ArgumentError("$object cannot be deserialized into a DateTime");
     }
+  }
+  
+}
+
+class ListTypeAdapter extends CustomTypeAdapter<List> {
+  
+  @override
+  bool get serializesSubtypes => true;
+  
+  @override
+  bool get deserializesNonGenerics => true;
+  
+  dynamic serialize(List object) {
+    return new List.from(object.map((value) => morph.serialize(value)));
+  }
+  
+  List deserialize(object, Type objectType) {
+    // reflectType is used so we can know the type arguments
+    var classMirror = reflectType(objectType) as ClassMirror;
+    
+    if (classMirror.typeArguments.length == 0) {
+      throw new UnsupportedError("Generic Lists are not supported.");
+    }
+    
+    var valueType = classMirror.typeArguments[0] as ClassMirror;
+
+    return new List.from(object.map(
+            (value) => morph.deserialize(valueType.reflectedType, value)));
+    
+  }
+  
+}
+
+class MapTypeAdapter extends CustomTypeAdapter<Map> {
+  
+  @override
+  bool get serializesSubtypes => true;
+  
+  @override
+  bool get deserializesNonGenerics => true;
+  
+  dynamic serialize(Map object) {
+    return new Map.fromIterables(object.keys.map((key) => key.toString()), 
+                                  object.values.map(
+                                      (value) => morph.serialize(value)));
+  }
+  
+  Map deserialize(object, Type objectType) {
+    if (object is! Map) {
+      throw new ArgumentError("$object cannot be deserialized into a Map");
+    }
+    
+    // reflectType is used so we can know the type arguments
+    var classMirror = reflectType(objectType) as ClassMirror;
+    
+    if (classMirror.typeArguments.length < 2) {
+      throw new UnsupportedError("Generic Maps are not supported.");
+    }
+    
+    var keyType = classMirror.typeArguments[0] as ClassMirror;
+    var valueType = classMirror.typeArguments[1] as ClassMirror;
+
+    return new Map.fromIterables(object.keys, object.values.map(
+        (value) => morph.deserialize(valueType.reflectedType, value)));
+    
   }
   
 }
