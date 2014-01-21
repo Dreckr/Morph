@@ -33,11 +33,12 @@ class GenericTypeAdapter extends CustomTypeAdapter {
             result[name] = morph.serialize(value);
           } on SerializationException catch (exception) {
             throw new SerializationException.
-                                fromPrevious(exception, 
-                                             new Reference(member.simpleName));
+                             fromPrevious(exception, 
+                                          new Reference(member.qualifiedName));
           } catch (error) {
-            throw new SerializationException(error,
-                                              new Reference(member.simpleName));
+            throw 
+              new SerializationException(error,
+                                         new Reference(member.qualifiedName));
           }
         }
   
@@ -77,11 +78,11 @@ class GenericTypeAdapter extends CustomTypeAdapter {
             } on DeserializationException catch (exception) {
               throw new DeserializationException.
               fromPrevious(exception, 
-                  new Reference(member.simpleName));
+                  new Reference(member.qualifiedName));
             } catch (error) {
               throw new DeserializationException(
                       error,
-                      new Reference(member.simpleName));
+                      new Reference(member.qualifiedName));
             }
           }
        });
@@ -114,11 +115,11 @@ class GenericTypeAdapter extends CustomTypeAdapter {
             } on DeserializationException catch (exception) {
               throw new DeserializationException.
               fromPrevious(exception, 
-                  new Reference(member.simpleName));
+                  new Reference(member.qualifiedName));
             } catch (error) {
               throw new DeserializationException(
                   error,
-                  new Reference(member.simpleName));
+                  new Reference(member.qualifiedName));
             }
           }
        });
