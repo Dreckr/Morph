@@ -38,17 +38,17 @@ void circularReferenceTest() {
         morph.serialize(one);
       };
       
-      expect(serialization, throwsArgumentError);
+      expect(serialization, throwsException);
     });
     
-    test("Indirect circular reference throws ArgumentError", () {
+    test("Indirect circular reference throws Exception", () {
       three.two = two;
       
       var serialization = () {
         morph.serialize(one);
       };
       
-      expect(serialization, throwsArgumentError);
+      expect(serialization, throwsException);
     });
   });
 }

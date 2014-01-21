@@ -3,6 +3,7 @@ library morph.adapters;
 import 'dart:mirrors';
 import 'annotations.dart';
 import 'core.dart';
+import 'exceptions.dart';
 import 'mirrors_util.dart' as MirrorsUtil;
 
 class GenericTypeAdapter extends CustomTypeAdapter {
@@ -28,7 +29,16 @@ class GenericTypeAdapter extends CustomTypeAdapter {
         var value = im.getField(member.simpleName).reflectee;
         
         if (value != null) {
-          result[name] = morph.serialize(value);
+          try {
+            result[name] = morph.serialize(value);
+          } on SerializationException catch (exception) {
+            throw new SerializationException.
+                                fromPrevious(exception, 
+                                             new Reference(member.simpleName));
+          } catch (error) {
+            throw new SerializationException(new Reference(member.simpleName),
+                                              error);
+          }
         }
   
     });
@@ -60,9 +70,19 @@ class GenericTypeAdapter extends CustomTypeAdapter {
           var name = _getPropertyName(member);
   
           if (member.type is ClassMirror && object.containsKey(name)) {
-            im.setField(member.simpleName, 
-                        morph.deserialize(member.type.reflectedType,
-                                             object[name]));
+            try {
+              im.setField(member.simpleName, 
+                  morph.deserialize(member.type.reflectedType,
+                                    object[name]));
+            } on DeserializationException catch (exception) {
+              throw new DeserializationException.
+              fromPrevious(exception, 
+                  new Reference(member.simpleName));
+            } catch (error) {
+              throw new DeserializationException(
+                      new Reference(member.simpleName),
+                      error);
+            }
           }
        });
     
@@ -87,9 +107,19 @@ class GenericTypeAdapter extends CustomTypeAdapter {
           var type = member.parameters[0].type;
           
           if (type is ClassMirror && object.containsKey(propertyName)) {
-            im.setField(MirrorSystem.getSymbol(name, type.owner), 
-                        morph.deserialize(type.reflectedType, 
-                                             object[propertyName]));
+            try {
+              im.setField(MirrorSystem.getSymbol(name, type.owner), 
+                          morph.deserialize(type.reflectedType, 
+                                               object[propertyName]));
+            } on DeserializationException catch (exception) {
+              throw new DeserializationException.
+              fromPrevious(exception, 
+                  new Reference(member.simpleName));
+            } catch (error) {
+              throw new DeserializationException(
+                  new Reference(member.simpleName),
+                  error);
+            }
           }
        });
 

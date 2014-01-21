@@ -1,12 +1,9 @@
 part of morph_test;
 
-
-class CollectionsModel
-{
+class CollectionsModel {
   Map<String, int> map;
   List<String> list;
 }
-
 
 void collectionsModelTest() {
   var morph = new Morph();
