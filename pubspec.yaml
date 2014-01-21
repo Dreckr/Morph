@@ -3,8 +3,8 @@ version: 0.8.1
 authors:
 - Diego Rocha <diego.rocha.comp@gmail.com>
 - Dan Parnham <dan@teadriven.me.uk>
-description: A mirror based serializer and deserializer of Dart objects
-homepage: https://github.com/Dreckr/Morph.
+description: A mirror based serializer and deserializer of Dart objects.
+homepage: https://github.com/Dreckr/Morph
 environment:
   sdk: '>=1.0.0 <2.0.0'
 dependencies:
