@@ -8,10 +8,10 @@ import 'package:quiver/mirrors.dart';
 import 'package:collection/collection.dart';
 import 'adapters.dart';
 import 'annotations.dart';
+import 'exceptions.dart';
 import 'mirrors_util.dart' as MirrorsUtil;
 
 // TODO(diego): Document
-// TODO(diego): Improve error messages
 /**
  * An easy to use serializer/deserializer of Dart objects.
  * 
@@ -95,32 +95,39 @@ class Morph {
       
     var result;
     
-    if (_serializers.containsKey(object.runtimeType) ||
-                (_checkForTypeAdapters(object.runtimeType) &&
-                  _serializers.containsKey(object.runtimeType))) {
-      result = _serializers[object.runtimeType]
-                .serialize(object);
-    } else if (_isSupported(object)) {
-      var classMirror = reflectClass(object.runtimeType);
-      var supertype = _serializers.keys
-          .where((key) => _serializers[key].serializesSubtypes)
-          .firstWhere((key) => classImplements(classMirror, getTypeName(key)), 
-          orElse: () => null);
-      
-      if (supertype != null) {
-        result = _serializers[supertype].serialize(object);
+    try {
+      if (_serializers.containsKey(object.runtimeType) ||
+                  (_checkForTypeAdapters(object.runtimeType) &&
+                    _serializers.containsKey(object.runtimeType))) {
+        result = _serializers[object.runtimeType]
+                  .serialize(object);
+      } else if (_isSupported(object)) {
+        var classMirror = reflectClass(object.runtimeType);
+        var supertype = _serializers.keys
+            .where((key) => _serializers[key].serializesSubtypes)
+            .firstWhere((key) => classImplements(classMirror, getTypeName(key)),
+            orElse: () => null);
+        
+        if (supertype != null) {
+          result = _serializers[supertype].serialize(object);
+        } else {
+          result = _genericTypeAdapter.serialize(object);
+        }
       } else {
-        result = _genericTypeAdapter.serialize(object);
+        throw 
+          new UnsupportedError("Serialization of $object is not supported");
       }
-    } else {
-      throw new UnsupportedError("Serialization of $object is not supported");
+      
+      if (encoder != null) {
+        result = encoder.convert(result);
+      }
+    } on SerializationException catch(exception) {
+      rethrow;
+    } catch(error) {
+      throw new SerializationException(error);
+    } finally {
+      _workingObjects.removeLast();
     }
-
-    if (encoder != null) {
-      result = encoder.convert(result);
-    }
-    
-    _workingObjects.removeLast();
     
     return result;
   }
@@ -157,28 +164,34 @@ class Morph {
     }
     
     var result;
-    if (_deserializers.containsKey(targetType) ||
-                (_checkForTypeAdapters(targetType) && 
-                  _deserializers.containsKey(targetType))) {
-      result = _deserializers[targetType].deserialize(value, targetType);
-    } else if (_isSupported(targetType)) {
-      var classMirror = reflectClass(targetType);
-      var genericType = _deserializers.keys
-          .where((key) => _deserializers[key].deserializesNonGenerics)
-          .firstWhere((key) => getTypeName(key) == classMirror.qualifiedName,
-            orElse: () => null);
-      
-      if (genericType != null) {
-        result = _deserializers[genericType].deserialize(value, targetType);
+    try {
+      if (_deserializers.containsKey(targetType) ||
+                  (_checkForTypeAdapters(targetType) && 
+                    _deserializers.containsKey(targetType))) {
+        result = _deserializers[targetType].deserialize(value, targetType);
+      } else if (_isSupported(targetType)) {
+        var classMirror = reflectClass(targetType);
+        var genericType = _deserializers.keys
+            .where((key) => _deserializers[key].deserializesNonGenerics)
+            .firstWhere((key) => getTypeName(key) == classMirror.qualifiedName,
+              orElse: () => null);
+        
+        if (genericType != null) {
+          result = _deserializers[genericType].deserialize(value, targetType);
+        } else {
+          result = _genericTypeAdapter.deserialize(value, targetType);
+        }
       } else {
-        result = _genericTypeAdapter.deserialize(value, targetType);
+        throw 
+          new UnsupportedError("Deserialization of $targetType is not supported");
       }
-    } else {
-      throw 
-        new UnsupportedError("Deserialization of $targetType is not supported");
+    } on DeserializationException catch(exception) {
+      rethrow;
+    } catch(error) {
+      throw new DeserializationException(error);
+    } finally {
+      _workingObjects.removeLast();
     }
-    
-    _workingObjects.removeLast();
     
     return result;
   }

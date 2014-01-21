@@ -4,3 +4,4 @@
   - @InstanceProvider and @TypeAdapter annotations
   - InstanceProvider abstract class renamed to CustomInstanceProvider
   - TypeAdapter abstract class renamed to CustomTypeAdapter
+  - SerializationException and DeserializationException

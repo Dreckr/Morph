@@ -36,8 +36,8 @@ class GenericTypeAdapter extends CustomTypeAdapter {
                                 fromPrevious(exception, 
                                              new Reference(member.simpleName));
           } catch (error) {
-            throw new SerializationException(new Reference(member.simpleName),
-                                              error);
+            throw new SerializationException(error,
+                                              new Reference(member.simpleName));
           }
         }
   
@@ -80,8 +80,8 @@ class GenericTypeAdapter extends CustomTypeAdapter {
                   new Reference(member.simpleName));
             } catch (error) {
               throw new DeserializationException(
-                      new Reference(member.simpleName),
-                      error);
+                      error,
+                      new Reference(member.simpleName));
             }
           }
        });
@@ -117,8 +117,8 @@ class GenericTypeAdapter extends CustomTypeAdapter {
                   new Reference(member.simpleName));
             } catch (error) {
               throw new DeserializationException(
-                  new Reference(member.simpleName),
-                  error);
+                  error,
+                  new Reference(member.simpleName));
             }
           }
        });
@@ -291,6 +291,7 @@ class DateTimeTypeAdapter extends CustomTypeAdapter<DateTime> {
   
 }
 
+// TODO(diego): Properly propagate errors on ListTypeAdapter and MapTypeAdapter
 class ListTypeAdapter extends CustomTypeAdapter<List> {
   
   @override
