@@ -74,7 +74,7 @@ class Morph {
   /**
    * Returns a serialization of [object] into a simple object.
    * 
-   * If [object] is already simple, it is returned. If it is a iterable or map, 
+   * If [object] is already simple, it is returned. If it is a iterable or map,
    * all its elements are serialized. In case it is of any other type, either
    * a custom [Serializer] is used (if registered for such type) or a generic
    * serializer that uses reflection is used 

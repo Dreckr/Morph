@@ -277,8 +277,9 @@ class ListTypeAdapter extends CustomTypeAdapter<List> {
     // reflectType is used so we can know the type arguments
     var classMirror = reflectType(objectType) as ClassMirror;
     
-    if (classMirror.typeArguments.length == 0) {
-      throw new UnsupportedError("Generic Lists are not supported.");
+    if (classMirror.typeArguments.any(
+        (typeArg) => typeArg == currentMirrorSystem().dynamicType)) {
+      throw new UnsupportedError("Unbound generic Lists are not supported.");
     }
     
     var valueType = classMirror.typeArguments[0] as ClassMirror;
@@ -312,8 +313,9 @@ class MapTypeAdapter extends CustomTypeAdapter<Map> {
     // reflectType is used so we can know the type arguments
     var classMirror = reflectType(objectType) as ClassMirror;
     
-    if (classMirror.typeArguments.length < 2) {
-      throw new UnsupportedError("Generic Maps are not supported.");
+    if (classMirror.typeArguments.any(
+        (typeArg) => typeArg == currentMirrorSystem().dynamicType)) {
+      throw new UnsupportedError("Unbound generic Maps are not supported.");
     }
     
     var keyType = classMirror.typeArguments[0] as ClassMirror;

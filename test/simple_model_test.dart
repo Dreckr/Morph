@@ -1,4 +1,4 @@
-part of model_map_test;
+part of morph_test;
 
 
 class SimpleModel {
