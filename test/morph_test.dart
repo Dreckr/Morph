@@ -15,6 +15,7 @@ part 'property_annotation_test.dart';
 part 'circular_reference_test.dart';
 part 'instance_provider_test.dart';
 part 'encoder_decoder_test.dart';
+part 'subclass_test.dart';
 
 void main() {
   useVMConfiguration();
@@ -39,4 +40,5 @@ void main() {
   
   encoderDecoderTest();
   
+  subclassTest();
 }

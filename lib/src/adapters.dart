@@ -14,7 +14,7 @@ class GenericTypeAdapter extends CustomTypeAdapter {
     var result  = new Map<String, dynamic>();
     var im = reflect(object);
     
-    var members = im.type.declarations.values;
+    var members = _getAllDeclarations(im.type).values;
 
     members
       .where(
@@ -56,7 +56,7 @@ class GenericTypeAdapter extends CustomTypeAdapter {
     var instance = _createInstanceOf(objectType);
     
     var im = reflect(instance);
-    var members = im.type.declarations.values;
+    var members = _getAllDeclarations(im.type).values;
 
     members
     .where(
@@ -169,6 +169,17 @@ class GenericTypeAdapter extends CustomTypeAdapter {
       
       return name;
     }
+  }
+  
+  Map<Symbol, DeclarationMirror> _getAllDeclarations(ClassMirror classMirror) {
+    var declarations = {};
+    
+    while (classMirror.superclass != null) {
+      declarations.addAll(classMirror.declarations);
+      classMirror = classMirror.superclass;
+    }
+    
+    return declarations;
   }
 }
 
