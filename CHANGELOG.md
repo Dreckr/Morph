@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.8.3
+  Solved conflicts between dart:collection and collection package dependency.
+
 ## 0.8.2
   - Use qualified names on exception's reference chain
   - Serialize and deserialize member of superclasses

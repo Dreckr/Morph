@@ -7,4 +7,5 @@ pubspec.lock
 packages
 .settings
 .buildlog
+.project
 
