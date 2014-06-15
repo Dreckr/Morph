@@ -8,6 +8,7 @@ homepage: https://github.com/Dreckr/Morph
 environment:
   sdk: '>=1.0.0 <2.0.0'
 dependencies:
-  quiver: '>=0.8.1 <0.19.0'
+  quiver: '>=0.18.2 <0.19.0'
+  stack_trace: '>=1.0.0 <2.0.0'
 dev_dependencies:
-  unittest: '>=0.8.1'
+  unittest: '>=0.8.1 <0.12.0'

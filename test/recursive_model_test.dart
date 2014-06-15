@@ -1,10 +1,12 @@
 part of morph_test;
 
+@serializable
 class InnerModel {
   String string;
   int integer;
 }
 
+@serializable
 class OuterModel {
   InnerModel inner;
 }

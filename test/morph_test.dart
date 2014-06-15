@@ -2,7 +2,7 @@ library morph_test;
 
 import 'dart:convert';
 import 'package:unittest/unittest.dart';
-import 'package:unittest/vm_config.dart';
+//import 'package:unittest/vm_config.dart';
 import 'package:morph/morph.dart';
 
 part 'simple_model_test.dart';
@@ -18,27 +18,31 @@ part 'encoder_decoder_test.dart';
 part 'subclass_test.dart';
 
 void main() {
-  useVMConfiguration();
-  
+//  useVMConfiguration();
+//
+//  var typeReference = const TypeReference<List<double>>();
+//  print(typeReference.getType());
+//  print(List);
+
   simpleModelTest();
-  
+
   collectionsModelTest();
-  
+
   recursiveModelTest();
-  
+
   complexModelTest();
-  
+
   customSerializerDeserializerTest();
-  
+
   ignoreAnnotationTest();
-  
+
   propertyAnnotationTest();
-  
+
   circularReferenceTest();
-  
+
   instanceProviderTest();
-  
+
   encoderDecoderTest();
-  
+
   subclassTest();
 }

@@ -1,6 +1,6 @@
 part of morph_test;
 
-
+@serializable
 class ComplexModel {
   int integer;
   List<SimpleModel> modelList;
@@ -13,16 +13,16 @@ void complexModelTest() {
   var morph = new Morph();
   var now = new DateTime.now();
   var today = now.toString().replaceFirst(' ', 'T');
-  var tomorrow = 
+  var tomorrow =
       now.add(new Duration(days: 1)).toString().replaceFirst(' ', 'T');
-  
+
   var map = {
     'integer':    42,
-    'modelList':  [ { 'string': 'a string', 'flag': true }, 
+    'modelList':  [ { 'string': 'a string', 'flag': true },
                     { 'string': 'another string', 'float': 1.23 } ],
     'dateMap':    { 'Today': today, 'Tomorrow': tomorrow },
     'modelMap':    { 'first': { 'string': 'first model', 'integer': 1 } },
-    'modelListMap':  { 'first': [ { 'string': 'first model' }, 
+    'modelListMap':  { 'first': [ { 'string': 'first model' },
                                   { 'string': 'second model', 'float': 1.23 }] }
   };
 

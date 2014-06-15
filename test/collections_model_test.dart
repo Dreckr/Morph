@@ -1,5 +1,6 @@
 part of morph_test;
 
+@serializable
 class CollectionsModel {
   Map<String, int> map;
   List<String> list;
@@ -7,7 +8,7 @@ class CollectionsModel {
 
 void collectionsModelTest() {
   var morph = new Morph();
-  var map = { 'map': { 'first': 42, 'second': 123 }, 
+  var map = { 'map': { 'first': 42, 'second': 123 },
               'list': [ 'list', 'of', 'strings' ] };
 
   group('Collections model:', () {

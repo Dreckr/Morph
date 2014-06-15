@@ -3,11 +3,13 @@ library morph.core;
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
+
+@MirrorsUsed(
+    metaTargets: const [Serializable, Dart2JsPreserve],
+    override: '*')
 import 'dart:mirrors';
-import 'package:quiver/mirrors.dart';
 import 'adapters.dart';
 import 'annotations.dart';
-import 'exceptions.dart';
 import 'mirrors_util.dart' as MirrorsUtil;
 
 // TODO(diego): Document
@@ -19,19 +21,19 @@ import 'mirrors_util.dart' as MirrorsUtil;
  * easily encoded to JSON, XML or any other format.
  */
 class Morph {
-  Map<Type, Deserializer> _deserializers = {};
-  Map<Type, Serializer> _serializers = {};
+  List<Deserializer> _deserializers = [];
+  List<Serializer> _serializers = [];
   CustomTypeAdapter _genericTypeAdapter = new GenericTypeAdapter();
   Map<Type, CustomInstanceProvider> _instanceProviders = {};
   Queue _workingObjects = new Queue();
 
   /// All deserializers registered
-  Map<Type, Deserializer> get deserializers =>
-      new UnmodifiableMapView<Type, Deserializer>(_deserializers);
+  List<Deserializer> get deserializers =>
+      new UnmodifiableListView<Deserializer>(_deserializers);
 
   /// All serializers registered
-  Map<Type, Serializer> get serializers =>
-      new UnmodifiableMapView<Type, Serializer>(_serializers);
+  List<Serializer> get serializers =>
+      new UnmodifiableListView<Serializer>(_serializers);
 
   /// All instance providers registered
   Map<Type, CustomInstanceProvider> get instanceProviders =>
@@ -39,28 +41,27 @@ class Morph {
 
   Morph() {
     _genericTypeAdapter.install(this);
-    registerTypeAdapter(String, new StringTypeAdapter());
-    registerTypeAdapter(int, new IntTypeAdapter());
-    registerTypeAdapter(double, new DoubleTypeAdapter());
-    registerTypeAdapter(num, new NumTypeAdapter());
-    registerTypeAdapter(bool, new BoolTypeAdapter());
-    registerTypeAdapter(DateTime, new DateTimeTypeAdapter());
-    registerTypeAdapter(List, new ListTypeAdapter());
-    registerTypeAdapter(Iterable, new ListTypeAdapter());
-    registerTypeAdapter(Map, new MapTypeAdapter());
+    registerTypeAdapter(new StringTypeAdapter());
+    registerTypeAdapter(new IntTypeAdapter());
+    registerTypeAdapter(new DoubleTypeAdapter());
+    registerTypeAdapter(new NumTypeAdapter());
+    registerTypeAdapter(new BoolTypeAdapter());
+    registerTypeAdapter(new DateTimeTypeAdapter());
+    registerTypeAdapter(new IterableTypeAdapter());
+    registerTypeAdapter(new MapTypeAdapter());
   }
 
   /// Registers a new [Serializer], [Deserializer] or [CustomTypeAdapter] for
   /// [type]
-  void registerTypeAdapter(Type type, adapter) {
+  void registerTypeAdapter(adapter) {
     if (adapter is Serializer) {
       adapter.install(this);
-      _serializers[type] = adapter;
+      _serializers.add(adapter);
     }
 
     if (adapter is Deserializer) {
       adapter.install(this);
-      _deserializers[type] = adapter;
+      _deserializers.add(adapter);
     }
   }
 
@@ -95,23 +96,17 @@ class Morph {
     var result;
 
     try {
-      if (_serializers.containsKey(object.runtimeType) ||
-                  (_checkForTypeAdapters(object.runtimeType) &&
-                    _serializers.containsKey(object.runtimeType))) {
-        result = _serializers[object.runtimeType]
-                  .serialize(object);
-      } else if (_isSupported(object)) {
-        var classMirror = reflectClass(object.runtimeType);
-        var supertype = _serializers.keys
-            .where((key) => _serializers[key].serializesSubtypes)
-            .firstWhere((key) => classImplements(classMirror, getTypeName(key)),
-            orElse: () => null);
-
-        if (supertype != null) {
-          result = _serializers[supertype].serialize(object);
-        } else {
-          result = _genericTypeAdapter.serialize(object);
-        }
+      var serializer = _serializers.firstWhere(
+          (serializer) => serializer.supportsSerializationOf(object),
+          orElse: () {
+            if (_isSupported(object)) {
+              return _genericTypeAdapter;
+            } else {
+              return null;
+            }
+          });
+      if (serializer != null) {
+        result = serializer.serialize(object);
       } else {
         throw
           new UnsupportedError("Serialization of $object is not supported");
@@ -120,10 +115,8 @@ class Morph {
       if (encoder != null) {
         result = encoder.convert(result);
       }
-    } on SerializationException catch(exception) {
-      rethrow;
     } catch(error) {
-      throw new SerializationException(error);
+      rethrow;
     } finally {
       _workingObjects.removeLast();
     }
@@ -164,30 +157,25 @@ class Morph {
 
     var result;
     try {
-      if (_deserializers.containsKey(targetType) ||
-                  (_checkForTypeAdapters(targetType) &&
-                    _deserializers.containsKey(targetType))) {
-        result = _deserializers[targetType].deserialize(value, targetType);
-      } else if (_isSupported(targetType)) {
-        var classMirror = reflectClass(targetType);
-        var genericType = _deserializers.keys
-            .where((key) => _deserializers[key].deserializesNonGenerics)
-            .firstWhere((key) => getTypeName(key) == classMirror.qualifiedName,
-              orElse: () => null);
+      var deserializer = _deserializers.firstWhere(
+          (deserializer) =>
+              deserializer.supportsDeserializationOf(value, targetType),
+          orElse: () {
+            if (_isSupported(targetType)) {
+              return _genericTypeAdapter;
+            } else {
+              return null;
+            }
+          });
 
-        if (genericType != null) {
-          result = _deserializers[genericType].deserialize(value, targetType);
-        } else {
-          result = _genericTypeAdapter.deserialize(value, targetType);
-        }
+      if (deserializer != null) {
+        result = deserializer.deserialize(value, targetType);
       } else {
         throw
           new UnsupportedError("Deserialization of $targetType is not supported");
       }
-    } on DeserializationException catch(exception) {
-      rethrow;
     } catch(error) {
-      throw new DeserializationException(error);
+      rethrow;
     } finally {
       _workingObjects.removeLast();
     }
@@ -206,7 +194,7 @@ class Morph {
           MirrorsUtil.createInstanceOf(
               typeAdapterMetadata.reflectee.typeAdapter);
 
-      registerTypeAdapter(type, adapter);
+      registerTypeAdapter(adapter);
     });
 
     return foundTypeAdapter;
@@ -219,17 +207,17 @@ class Morph {
  * A custom serializer must be able to take objects of [T] and serialize its
  * state into a simple object (String, num, bool, null, List or Map).
  */
-abstract class Serializer<T> {
+abstract class Serializer {
   Morph morph;
-
-  bool get serializesSubtypes => false;
 
   /// Installs this serializer on Morph.
   void install(Morph morph) {
     this.morph = morph;
   }
 
-  dynamic serialize(T object);
+  bool supportsSerializationOf (object);
+
+  dynamic serialize(object);
 
 }
 
@@ -239,17 +227,17 @@ abstract class Serializer<T> {
  * A custom deserializer must be able to create objects of [T] from a simple
  * object (String, num, bool, null, List or Map).
  */
-abstract class Deserializer<T> {
+abstract class Deserializer {
   Morph morph;
-
-  bool get deserializesNonGenerics => false;
 
   /// Installs this deserializer on Morph.
   void install(Morph morph) {
     this.morph = morph;
   }
 
-  T deserialize(object, Type targetType);
+  bool supportsDeserializationOf (object, Type targetType);
+
+  deserialize(object, Type targetType);
 
 }
 
@@ -259,8 +247,8 @@ abstract class Deserializer<T> {
  * A [CustomTypeAdapter] is a object that can serialize and deserialize objects
  * of [T].
  */
-abstract class CustomTypeAdapter<T> extends Object
-                                      with Serializer<T>, Deserializer<T> {
+abstract class CustomTypeAdapter extends Object
+                                      with Serializer, Deserializer {
   Morph morph;
 
   /// Installs this type adapter on Morph.
