@@ -87,6 +87,9 @@ class Morph {
    * Note: The keys of a map are transformed to strings using toString().
    */
   dynamic serialize(dynamic object, [Converter<Object, Object> encoder]) {
+    if (object == null) {
+      return null;
+    }
     if (_workingObjects.contains(object)) {
       throw new ArgumentError("$object contains a circular reference");
     }
