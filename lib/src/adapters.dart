@@ -330,6 +330,9 @@ class DateTimeTypeAdapter extends CustomTypeAdapter {
 // TODO(diego): Properly propagate errors on ListTypeAdapter and MapTypeAdapter
 class IterableTypeAdapter extends CustomTypeAdapter {
 
+  static final ClassMirror listClassMirror = reflectClass(List);
+  static final ClassMirror setClassMirror = reflectClass(Set);
+
   dynamic serialize(Iterable object) {
     return new List.from(object.map((value) => morph.serialize(value)));
   }
@@ -340,10 +343,10 @@ class IterableTypeAdapter extends CustomTypeAdapter {
 
     var valueType = classMirror.typeArguments[0] as ClassMirror;
 
-    if (classImplements(classMirror, getTypeName(List)))
+    if (classImplements(classMirror, listClassMirror))
       return new List.from(object.map(
             (value) => morph.deserialize(valueType.reflectedType, value)));
-    else if (classImplements(classMirror, getTypeName(Set)))
+    else if (classImplements(classMirror, setClassMirror))
       return new Set.from(object.map(
             (value) => morph.deserialize(valueType.reflectedType, value)));
     else
@@ -362,6 +365,8 @@ class IterableTypeAdapter extends CustomTypeAdapter {
 }
 
 class MapTypeAdapter extends CustomTypeAdapter {
+
+  static final ClassMirror mapClassMirror = reflectClass(Map);
 
   dynamic serialize(Map object) {
     return new Map.fromIterables(object.keys.map((key) => key.toString()),
@@ -393,7 +398,7 @@ class MapTypeAdapter extends CustomTypeAdapter {
   @override
   bool supportsDeserializationOf(object, Type targetType) =>
       (object is Map) &&
-      (classImplements(reflectClass(targetType), getTypeName(Map)));
+      (classImplements(reflectClass(targetType), mapClassMirror));
 
   @override
   bool supportsSerializationOf(object) =>
